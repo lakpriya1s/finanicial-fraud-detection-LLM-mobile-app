@@ -1,0 +1,95 @@
+diff --git a/node_modules/react-native-transformers/lib/commonjs/models/base.js b/node_modules/react-native-transformers/lib/commonjs/models/base.js
+index 8aaae53..bf39377 100644
+--- a/node_modules/react-native-transformers/lib/commonjs/models/base.js
++++ b/node_modules/react-native-transformers/lib/commonjs/models/base.js
+@@ -33,7 +33,7 @@ class Base {
+       graphOptimizationLevel: "all"
+     };
+     if (options.externalData) {
+-      opt.externalData = [await fetch(getHuggingfaceUrl(model, onnx_file + "_data"))];
++      opt.externalData = [await fetch(getHuggingfaceUrl(model, options.fileExtension !==  ".data" ?  onnx_file + "_data" : onnx_file + ".data"))];
+     }
+     if (verbose) {
+       opt.logSeverityLevel = 0;
+@@ -70,16 +70,22 @@ class Base {
+     const start = t.dims[2] * (t.dims[1] - 1);
+     let max = arr[start];
+     let maxidx = 0;
++    
+     for (let i = 0; i < t.dims[2]; i++) {
+       const val = arr[i + start];
++      
++      // Check for NaN or Infinity
+       if (!isFinite(val)) {
++        console.error("Logits contain an invalid value: ", val);
+         throw new Error("found infinitive in logits");
+       }
++      
+       if (val > max) {
+         max = val;
+         maxidx = i;
+       }
+     }
++    
+     return maxidx;
+   }   
+   updateKVCache(feed, outputs) {
+diff --git a/node_modules/react-native-transformers/lib/module/models/base.js b/node_modules/react-native-transformers/lib/module/models/base.js
+index fa889c2..b3c4e3b 100644
+--- a/node_modules/react-native-transformers/lib/module/models/base.js
++++ b/node_modules/react-native-transformers/lib/module/models/base.js
+@@ -29,7 +29,7 @@ export class Base {
+       graphOptimizationLevel: "all"
+     };
+     if (options.externalData) {
+-      opt.externalData = [await fetch(getHuggingfaceUrl(model, onnx_file + "_data"))];
++      opt.externalData = [await fetch(getHuggingfaceUrl(model, options.fileExtension !==  ".data" ?  onnx_file + "_data" : onnx_file + ".data"))];
+     }
+     if (verbose) {
+       opt.logSeverityLevel = 0;
+@@ -66,16 +66,22 @@ export class Base {
+     const start = t.dims[2] * (t.dims[1] - 1);
+     let max = arr[start];
+     let maxidx = 0;
++    
+     for (let i = 0; i < t.dims[2]; i++) {
+       const val = arr[i + start];
++      
++      // Check for NaN or Infinity
+       if (!isFinite(val)) {
++        console.error("Logits contain an invalid value: ", val);
+         throw new Error("found infinitive in logits");
+       }
++      
+       if (val > max) {
+         max = val;
+         maxidx = i;
+       }
+     }
++    
+     return maxidx;
+   }   
+   updateKVCache(feed, outputs) {
+diff --git a/node_modules/react-native-transformers/src/models/base.tsx b/node_modules/react-native-transformers/src/models/base.tsx
+index 62b3d6a..b36db5f 100644
+--- a/node_modules/react-native-transformers/src/models/base.tsx
++++ b/node_modules/react-native-transformers/src/models/base.tsx
+@@ -16,6 +16,7 @@ export interface LoadOptions {
+   externalData: boolean;
+   fetch: (url: string) => Promise<string>;
+   executionProviders: InferenceSession.ExecutionProviderConfig[];
++  fileExtension: string;
+ }
+ 
+ export class Base {
+@@ -50,9 +51,7 @@ export class Base {
+     };
+ 
+     if (options.externalData) {
+-      opt.externalData = [
+-        await fetch(getHuggingfaceUrl(model, onnx_file + "_data")),
+-      ];
++      opt.externalData = [await fetch(getHuggingfaceUrl(model, options.fileExtension !==  ".data" ?  onnx_file + "_data" : onnx_file + ".data"))];
+     }
+ 
+     if (verbose) {
