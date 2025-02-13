@@ -12,7 +12,9 @@ import presets from "./presets.json";
 
 export default function App() {
   const [progress, setProgress] = React.useState<number>();
-  const [input, setInput] = React.useState<string>("We love local LLM");
+  const [input, setInput] = React.useState<string>(
+    "What is a Financial Fraud?"
+  );
   const [output, setOutput] = React.useState<string>();
 
   const loadModel = async (preset: {
@@ -91,7 +93,7 @@ export default function App() {
       <Text>Output: {output}</Text>
       <Text>
         {progress === undefined
-          ? "Not selected a LLM model"
+          ? ""
           : progress < 1
           ? `Downloading: ${progress * 100}%`
           : "Downloaded and loaded"}
