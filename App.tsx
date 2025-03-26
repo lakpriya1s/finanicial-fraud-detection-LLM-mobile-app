@@ -32,20 +32,17 @@ export default function App() {
 
       const localPath = localDir + url.split("/").pop()!;
 
-      // Ensure directory exists
       const dirInfo = await FileSystem.getInfoAsync(localDir);
       if (!dirInfo.exists) {
         await FileSystem.makeDirectoryAsync(localDir, { intermediates: true });
       }
 
-      // Check if the file already exists
       const fileInfo = await FileSystem.getInfoAsync(localPath);
       if (fileInfo.exists) {
         console.log("File exists locally: " + localPath);
-        return localPath; // Return the local path if the file already exists
+        return localPath;
       }
 
-      // If the file doesn't exist, proceed with downloading
       console.log("Downloading... " + url);
       const downloadResumable = FileSystem.createDownloadResumable(
         url,
@@ -73,7 +70,17 @@ export default function App() {
   };
 
   const AutoComplete = () => {
-    Pipeline.TextGeneration.generate(input, setOutput);
+    const chatPrompt = `
+<|system|>
+You are a financial fraud detection expert. You are given a text and you need to detect if it is a financial fraud or not.
+<|end|>
+<|user|>
+Classify the text as financial fraud or not.
+Text: ${input}
+Fraud: <|end|>
+<|assistant|>
+`;
+    Pipeline.TextGeneration.generate(chatPrompt, setOutput);
   };
 
   return (

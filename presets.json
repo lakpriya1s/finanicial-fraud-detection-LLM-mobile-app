@@ -3,19 +3,17 @@
     "name": "Phi-3-mini",
     "model": "microsoft/Phi-3-mini-4k-instruct-onnx-web",
     "onnx_path": "onnx/model_q4.onnx",
-    "options": { "externalData": true, "max_tokens": 100 }
+    "options": { "externalData": true }
   },
   {
     "name": "Llama-160M",
     "model": "Felladrin/onnx-Llama-160M-Chat-v1",
-    "onnx_path": "onnx/decoder_model_merged.onnx",
-    "options": { "max_tokens": 100 }
+    "onnx_path": "onnx/decoder_model_merged.onnx"
   },
   {
     "name": "Minueza-32M",
     "model": "Felladrin/onnx-Minueza-32M-UltraChat",
-    "onnx_path": "onnx/decoder_model_merged.onnx",
-    "options": { "max_tokens": 100 }
+    "onnx_path": "onnx/decoder_model_merged.onnx"
   },
   {
     "name": "Gemma-2-2B-jpn-it",
@@ -32,13 +30,12 @@
     "name": "Quantized-llama-3.2-3B-Lakpriya",
     "model": "lakpriya/llama_3b_onnx",
     "onnx_path": "model_quantized.onnx",
-    "options": { "externalData": true, "max_tokens": 100 }
+    "options": { "externalData": true }
   },
   {
     "name": "Quantized-llama-3.2-1B-Lakpriya",
     "model": "lakpriya/llama_1b_onnx",
-    "onnx_path": "model_quantized.onnx",
-    "options": { "max_tokens": 100 }
+    "onnx_path": "model_quantized.onnx"
   },
   {
     "name": "Quantized_Gemma-2B-it2-Lakpriya",
@@ -46,8 +43,7 @@
     "onnx_path": "model_quantized.onnx",
     "options": {
       "externalData": true,
-      "fileExtension": ".data",
-      "max_tokens": 100
+      "fileExtension": ".data"
     }
   }
 ]
