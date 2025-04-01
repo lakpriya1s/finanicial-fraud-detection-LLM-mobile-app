@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "example",
-    "slug": "example",
+    "name": "fraudShield",
+    "slug": "fraudShield",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -13,21 +13,19 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "transformers.example"
+      "bundleIdentifier": "lakpriya.fraudShield"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "transformers.example"
+      "package": "lakpriya.fraudShield"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": [
-      "onnxruntime-react-native"
-    ],
+    "plugins": ["onnxruntime-react-native"],
     "extra": {
       "eas": {
         "projectId": "7790750f-d3f8-4852-a6c8-fc98b55a15b6"

@@ -18,10 +18,13 @@
     "onnxruntime-web": "^1.19.2",
     "react": "18.2.0",
     "react-native": "0.74.3",
-    "react-native-transformers": "^1.0.0-alpha.0"
+    "react-native-transformers": "^1.0.0-alpha.0",
+    "text-encoding-polyfill": "^0.6.7",
+    "xregexp": "^5.1.2"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
+    "@babel/plugin-proposal-export-namespace-from": "^7.18.9",
     "@types/react": "~18.2.45",
     "patch-package": "^8.0.0",
     "postinstall-postinstall": "^2.1.0",

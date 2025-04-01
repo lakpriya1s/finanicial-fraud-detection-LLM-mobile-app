@@ -254,7 +254,7 @@ PODS:
   - hermes-engine (0.74.3):
     - hermes-engine/Pre-built (= 0.74.3)
   - hermes-engine/Pre-built (0.74.3)
-  - onnxruntime-c (1.19.2)
+  - onnxruntime-c (1.20.0)
   - onnxruntime-react-native (1.19.2):
     - onnxruntime-c
     - React-Core
@@ -1658,7 +1658,7 @@ SPEC CHECKSUMS:
   fmt: 4c2741a687cc09f0634a2e2c72a838b99f1ff120
   glog: fdfdfe5479092de0c4bdbebedd9056951f092c4f
   hermes-engine: 1f547997900dd0752dc0cc0ae6dd16173c49e09b
-  onnxruntime-c: 2903d6221d5613ceaa417ee91140a248648bbb6c
+  onnxruntime-c: 07cfff40dda7e1c54a4350bb2ad226c63150fce3
   onnxruntime-react-native: 87fe7bd1177967b4cb83ba50a2338ccf1a705153
   RCT-Folly: 02617c592a293bd6d418e0a88ff4ee1f88329b47
   RCTDeprecation: 4c7eeb42be0b2e95195563c49be08d0b839d22b4
@@ -1710,6 +1710,6 @@ SPEC CHECKSUMS:
   SocketRocket: abac6f5de4d4d62d24e11868d7a2f427e0ef940d
   Yoga: 04f1db30bb810187397fa4c37dd1868a27af229c
 
-PODFILE CHECKSUM: a437a0e19c336aa4f1ee3fba40056a7bb7808911
+PODFILE CHECKSUM: 238459d59940ac2b2877d00f5611a1354437dd1c
 
 COCOAPODS: 1.15.2

@@ -109,9 +109,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'transformers.example'
+    namespace 'lakpriya.fraudShield'
     defaultConfig {
-        applicationId 'transformers.example'
+        applicationId 'lakpriya.fraudShield'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
