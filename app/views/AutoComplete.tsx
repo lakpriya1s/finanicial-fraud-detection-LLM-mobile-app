@@ -47,6 +47,7 @@ const AutoComplete = ({ closeModal, input }: { closeModal: () => void, input: st
                 type: "APP_RESPONSE",
                 isFraud: output === "Yes",
             });
+            closeModal()
             setFetching(false);
             console.log("Improvement sent");
         } catch (error) {
