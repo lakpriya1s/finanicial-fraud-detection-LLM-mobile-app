@@ -83,7 +83,7 @@ const HomeScreen = () => {
                         </View>
                         {downloadable && <View style={styles.progressBarContainer}>
                             <Progress.Bar progress={progress} width={SCREEN_WIDTH - 32} height={8} />
-                            <Text style={styles.progressBarText}>{progress.toFixed(2)}%</Text>
+                            <Text style={styles.progressBarText}>{(progress*100).toFixed(2)}%</Text>
                             <Text style={styles.progressBarText}>{downloadable ? "Loading Model..." : "Model Loaded"}</Text>
                         </View>}
                     </View>
