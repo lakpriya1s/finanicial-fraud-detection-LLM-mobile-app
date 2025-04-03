@@ -251,9 +251,9 @@ PODS:
   - FBLazyVector (0.74.3)
   - fmt (9.1.0)
   - glog (0.3.5)
-  - hermes-engine (0.74.3):
-    - hermes-engine/Pre-built (= 0.74.3)
-  - hermes-engine/Pre-built (0.74.3)
+  - hermes-engine (0.74.5):
+    - hermes-engine/Pre-built (= 0.74.5)
+  - hermes-engine/Pre-built (0.74.5)
   - onnxruntime-c (1.20.0)
   - onnxruntime-react-native (1.19.2):
     - onnxruntime-c
@@ -1657,7 +1657,7 @@ SPEC CHECKSUMS:
   FBLazyVector: 7e977dd099937dc5458851233141583abba49ff2
   fmt: 4c2741a687cc09f0634a2e2c72a838b99f1ff120
   glog: fdfdfe5479092de0c4bdbebedd9056951f092c4f
-  hermes-engine: 1f547997900dd0752dc0cc0ae6dd16173c49e09b
+  hermes-engine: 8c1577f3fdb849cbe7729c2e7b5abc4b845e88f8
   onnxruntime-c: 07cfff40dda7e1c54a4350bb2ad226c63150fce3
   onnxruntime-react-native: 87fe7bd1177967b4cb83ba50a2338ccf1a705153
   RCT-Folly: 02617c592a293bd6d418e0a88ff4ee1f88329b47

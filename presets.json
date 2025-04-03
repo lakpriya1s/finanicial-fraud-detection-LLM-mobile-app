@@ -58,6 +58,12 @@
     "name": "my_ff4try_quantized",
     "model": "lakpriya/my_fd3_quantized",
     "onnx_path": "onnx/model.onnx"
+  },
+  {
+    "name": "Minueza-32M-Chat-fraud-detection",
+    "model": "lakpriya/Minueza-32M-Chat-fraud-detection-onnx_quantized",
+    "onnx_path": "lakpriya/model_quantized.onnx",
+    "options": { "externalData": true }
   }
   // {
   //   "name": "Minueza-32M",
