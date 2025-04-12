@@ -1,104 +1,12 @@
 [
   {
-    "name": "Qwen1.5-0.5B-Chat-fraud-detection-onnx",
+    "name": "Qwen1.5-0.5B-Chat-fraud-detection",
     "model": "lakpriya/Qwen1.5-0.5B-Chat-fraud-detection-onnx",
-    "onnx_path": "onnx/model.onnx"
+    "onnx_path": "onnx"
   },
   {
-    "name": "try2",
-    "model": "lakpriya/try2",
-    "onnx_path": "model.onnx"
-  },
-  {
-    "name": "Llama-160M-Chat-v1-my",
-    "model": "lakpriya/Llama-160M-Chat-v1-fraud-detection",
-    "onnx_path": "onnx/model.onnx"
-  },
-  {
-    "name": "TinyLlama-1.1B-Chat-v1.0-f",
-    "model": "lakpriya/TinyLlama-1.1B-Chat-v1.0-1_quantized",
-    "onnx_path": "onnx/model_int8.onnx"
-  },
-  {
-    "name": "Qwen1.5-0.5B-Chat1",
-    "model": "lakpriya/Qwen1.5-0.5B-Chat-fraud-detection-onnx",
-    "onnx_path": "onnx/model_quantized.onnx"
-  },
-  {
-    "name": "Qwen1.5-0.5B-Chat-original",
-    "model": "Xenova/Qwen1.5-0.5B-Chat",
-    "onnx_path": "onnx/decoder_model_merged.onnx"
-  },
-  {
-    "name": "TinyLlama-1.1B-Chat-v1.0",
-    "model": "onnx-community/TinyLlama-1.1B-Chat-v1.0-ONNX",
-    "onnx_path": "onnx/model_int8.onnx"
-  },
-  {
-    "name": "Qwen1.5-0.5B-Chat-fff",
-    "model": "lakpriya/my_fd7_quantized",
-    "onnx_path": "onnx/model.onnx"
-  },
-  {
-    "name": "my2-Llama-160M",
+    "name": "Llama-160M-Chat-v1-fraud-detection",
     "model": "lakpriya/Llama-160M-Chat-v1-fraud-detection-onnx",
-    "onnx_path": "onnx/model_q4f16.onnx"
-  },
-  {
-    "name": "Llama-160M",
-    "model": "Felladrin/onnx-Llama-160M-Chat-v1",
-    "onnx_path": "onnx/decoder_model_merged.onnx"
-  },
-  {
-    "name": "my_fd1_quantized",
-    "model": "lakpriya/my_fd1_quantized",
-    "onnx_path": "onnx/model.onnx"
-  },
-  {
-    "name": "my_ff4try_quantized",
-    "model": "lakpriya/my_fd3_quantized",
-    "onnx_path": "onnx/model.onnx"
-  },
-  {
-    "name": "Minueza-32M-Chat-fraud-detection",
-    "model": "lakpriya/Minueza-32M-Chat-fraud-detection-onnx_quantized",
-    "onnx_path": "lakpriya/model_quantized.onnx",
-    "options": { "externalData": true }
+    "onnx_path": "onnx"
   }
-  // {
-  //   "name": "Minueza-32M",
-  //   "model": "Felladrin/onnx-Minueza-32M-UltraChat",
-  //   "onnx_path": "onnx/decoder_model_merged.onnx"
-  // },
-  // {
-  //   "name": "Gemma-2-2B-jpn-it",
-  //   "model": "onnx-community/gemma-2-2b-jpn-it",
-  //   "onnx_path": "onnx/model_q4f16.onnx",
-  //   "options": { "externalData": true }
-  // },
-  // {
-  //   "name": "Quantized-llama-160M-Lakpriya",
-  //   "model": "lakpriya/llama-160m-onnx_quantized",
-  //   "onnx_path": "_qmodel.onnx"
-  // },
-  // {
-  //   "name": "Quantized-llama-3.2-3B-Lakpriya",
-  //   "model": "lakpriya/llama_3b_onnx",
-  //   "onnx_path": "model_quantized.onnx",
-  //   "options": { "externalData": true }
-  // },
-  // {
-  //   "name": "Quantized-llama-3.2-1B-Lakpriya",
-  //   "model": "lakpriya/llama_1b_onnx",
-  //   "onnx_path": "model_quantized.onnx"
-  // },
-  // {
-  //   "name": "Quantized_Gemma-2B-it2-Lakpriya",
-  //   "model": "lakpriya/gemma_2_2b_it_onnx_quantized",
-  //   "onnx_path": "model_quantized.onnx",
-  //   "options": {
-  //     "externalData": true,
-  //     "fileExtension": ".data"
-  //   }
-  // }
 ]

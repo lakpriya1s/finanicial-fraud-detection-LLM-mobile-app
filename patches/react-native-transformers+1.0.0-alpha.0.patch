@@ -1,5 +1,5 @@
 diff --git a/node_modules/react-native-transformers/lib/commonjs/models/base.js b/node_modules/react-native-transformers/lib/commonjs/models/base.js
-index 8aaae53..bf39377 100644
+index 8aaae53..56fd6e6 100644
 --- a/node_modules/react-native-transformers/lib/commonjs/models/base.js
 +++ b/node_modules/react-native-transformers/lib/commonjs/models/base.js
 @@ -33,7 +33,7 @@ class Base {
@@ -32,10 +32,84 @@ index 8aaae53..bf39377 100644
      }
 +    
      return maxidx;
-   }   
+   }
    updateKVCache(feed, outputs) {
+diff --git a/node_modules/react-native-transformers/lib/commonjs/models/text-generation.js b/node_modules/react-native-transformers/lib/commonjs/models/text-generation.js
+index 5d45b8c..37c70e3 100644
+--- a/node_modules/react-native-transformers/lib/commonjs/models/text-generation.js
++++ b/node_modules/react-native-transformers/lib/commonjs/models/text-generation.js
+@@ -39,6 +39,10 @@ class TextGeneration extends _base.Base {
+     let sequenceLength = this.outputTokens.length;
+     const initialLength = feed.input_ids.size;
+     
++    // Track the number of new tokens generated
++    let newTokensGenerated = 0;
++    const MAX_NEW_TOKENS = 5; // Hard-coded limit of 5 new tokens
++
+     // Prepare position IDs if needed
+     if (this.needPositionIds) {
+       feed.position_ids = new _onnxruntimeReactNative.Tensor("int64", BigInt64Array.from({
+@@ -50,7 +54,12 @@ class TextGeneration extends _base.Base {
+     }
+ 
+     // Generate tokens until the end of sequence token is found or max tokens limit is reached
+-    while (lastToken !== this.eos && lastToken !== 32007n && sequenceLength < maxTokens && !this.stopGeneration) {
++    while (lastToken !== this.eos && 
++           lastToken !== 32007n && 
++           sequenceLength < maxTokens && 
++           !this.stopGeneration &&
++           newTokensGenerated < MAX_NEW_TOKENS) {  // Added condition for new tokens limit
++      
+       sequenceLength = this.outputTokens.length;
+       feed.attention_mask = new _onnxruntimeReactNative.Tensor("int64", BigInt64Array.from({
+         length: sequenceLength
+@@ -58,6 +67,10 @@ class TextGeneration extends _base.Base {
+       const outputs = await this.sess.run(feed);
+       lastToken = BigInt(this.argmax(outputs.logits));
+       this.outputTokens.push(lastToken);
++      
++      // Increment the counter for new tokens generated
++      newTokensGenerated++;
++      
+       if (callback) {
+         callback(this.outputTokens);
+       }
+diff --git a/node_modules/react-native-transformers/lib/commonjs/pipelines/text-generation.js b/node_modules/react-native-transformers/lib/commonjs/pipelines/text-generation.js
+index 5a7ac0a..a131877 100644
+--- a/node_modules/react-native-transformers/lib/commonjs/pipelines/text-generation.js
++++ b/node_modules/react-native-transformers/lib/commonjs/pipelines/text-generation.js
+@@ -7,8 +7,8 @@ exports.default = void 0;
+ var _transformers = require("@xenova/transformers");
+ var _textGeneration = require("../models/text-generation.js");
+ // Set up environment for transformers.js tokenizer
+-_transformers.env.allowRemoteModels = true;
+-_transformers.env.allowLocalModels = false;
++_transformers.env.allowRemoteModels = false;
++_transformers.env.allowLocalModels = true;
+ 
+ // Declare tokenizer and model
+ let tokenizer;
+@@ -80,15 +80,16 @@ async function generate(prompt, callback = () => {}) {
+  * Loads the model and tokenizer with the specified options.
+  *
+  * @param model_name - The name of the model to load.
++ * @param model_path - The path to the model to load.
+  * @param onnx_path - The path to the ONNX model.
+  * @param options - Optional initialization options.
+  */
+-async function init(model_name, onnx_path, options) {
++async function init(model_name, model_path, onnx_path, options) {
+   _options = {
+     ..._options,
+     ...options
+   };
+-  tokenizer = await _transformers.AutoTokenizer.from_pretrained(model_name);
++  tokenizer = await _transformers.AutoTokenizer.from_pretrained(model_path.replace("file:///", ""));
+   await model.load(model_name, onnx_path, _options);
+ }
+ 
 diff --git a/node_modules/react-native-transformers/lib/module/models/base.js b/node_modules/react-native-transformers/lib/module/models/base.js
-index fa889c2..b3c4e3b 100644
+index fa889c2..268fca1 100644
 --- a/node_modules/react-native-transformers/lib/module/models/base.js
 +++ b/node_modules/react-native-transformers/lib/module/models/base.js
 @@ -29,7 +29,7 @@ export class Base {
@@ -68,7 +142,7 @@ index fa889c2..b3c4e3b 100644
      }
 +    
      return maxidx;
-   }   
+   }
    updateKVCache(feed, outputs) {
 diff --git a/node_modules/react-native-transformers/src/models/base.tsx b/node_modules/react-native-transformers/src/models/base.tsx
 index 62b3d6a..b36db5f 100644
@@ -93,3 +167,29 @@ index 62b3d6a..b36db5f 100644
      }
  
      if (verbose) {
+diff --git a/node_modules/react-native-transformers/src/pipelines/text-generation.tsx b/node_modules/react-native-transformers/src/pipelines/text-generation.tsx
+index 17a12ea..af5e54f 100644
+--- a/node_modules/react-native-transformers/src/pipelines/text-generation.tsx
++++ b/node_modules/react-native-transformers/src/pipelines/text-generation.tsx
+@@ -88,16 +88,20 @@ async function generate(
+  * Loads the model and tokenizer with the specified options.
+  *
+  * @param model_name - The name of the model to load.
++ * @param model_path - The path to the model to load.
+  * @param onnx_path - The path to the ONNX model.
+  * @param options - Optional initialization options.
+  */
+ async function init(
+   model_name: string,
++  model_path: string,
+   onnx_path: string,
+   options?: Partial<InitOptions>,
+ ): Promise<void> {
+   _options = { ..._options, ...options };
+-  tokenizer = await AutoTokenizer.from_pretrained(model_name);
++  tokenizer = await AutoTokenizer.from_pretrained(model_path.replace("file:///", ""), {
++    local_files_only: true,
++  });
+   await model.load(model_name, onnx_path, _options);
+ }
+ 

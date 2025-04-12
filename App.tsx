@@ -1,15 +1,9 @@
-import "./polyfills";
 import React from "react";
-import {
-  StyleSheet,
-  SafeAreaView,
-} from "react-native";
-
+import { StyleSheet, SafeAreaView } from "react-native";
 
 import HomeScreen from "./app/screens/HomeScreen";
 
 export default function App() {
-
   return (
     <SafeAreaView style={styles.container}>
       <HomeScreen />
