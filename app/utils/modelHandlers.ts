@@ -188,8 +188,10 @@ export const loadModel = async (
       );
       setProgress(1); // Set progress to 100% if no files
       setStatus("Required files not found");
-      return;
+      // return;
     }
+
+    console.log("Required files:", requiredFiles);
 
     let downloadedFiles = 0;
     const fileCount = requiredFiles.length;
@@ -229,14 +231,10 @@ export const loadModel = async (
           {},
           (progress) => {
             if (isCancelled) return;
-            // Calculate the combined progress: completed files + current file progress
-            // ensuring the total never exceeds fileCount (100%)
             const currentFileProgress =
               progress.totalBytesWritten / progress.totalBytesExpectedToWrite;
-            const totalProgress = Math.min(
-              (downloadedFiles + currentFileProgress) / fileCount,
-              1.0 // Cap at 100%
-            );
+            const totalProgress =
+              (downloadedFiles + currentFileProgress) / fileCount;
             setProgress(totalProgress);
             console.log("progress", totalProgress);
           }
@@ -275,16 +273,38 @@ export const loadModel = async (
       }
     };
 
-    // Initialize the model
+    // Create the model directory path for initialization
+    const modelDirPath = FileSystem.cacheDirectory + `${name}/`;
+
+    // Download all required files before model initialization
+    setStatus("Downloading model files...");
+    for (const file of requiredFiles) {
+      // Construct the full URL for each file
+      const fileUrl = `https://huggingface.co/${preset.model}/resolve/main/${file}`;
+
+      if (isCancelled) {
+        setStatus("Download cancelled");
+        return;
+      }
+
+      try {
+        await fetchWithCache(fileUrl);
+      } catch (error: any) {
+        if (isCancelled || error.message?.includes("cancelled")) {
+          setStatus("Download cancelled");
+          return;
+        }
+        throw error;
+      }
+    }
+
+    // Initialize the model after all files are downloaded
     setStatus("Loading model...");
     // Check if download was cancelled before model initialization
     if (isCancelled) {
       setStatus("Download cancelled");
       return;
     }
-
-    // Create the model directory path for initialization
-    const modelDirPath = FileSystem.cacheDirectory + `${name}/`;
 
     console.log("Using model path:", modelDirPath);
 
