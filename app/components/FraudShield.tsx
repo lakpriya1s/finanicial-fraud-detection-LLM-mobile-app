@@ -113,7 +113,7 @@ const FraudShield = () => {
 
     return (
       <View style={styles.modelSelector}>
-        <Text style={styles.label}>Select Fraud Detection Model</Text>
+        <Text style={styles.label}>Fraud Detection LLM</Text>
         <ScrollView
           ref={scrollViewRef}
           horizontal
@@ -292,7 +292,7 @@ const FraudShield = () => {
       <View style={styles.form}>
         <ModelSelector />
 
-        <Text style={styles.label}>Paste or Type Suspicious Message Here</Text>
+        <Text style={styles.label}>Suspicious Message</Text>
         <TextInput
           style={styles.input}
           multiline
