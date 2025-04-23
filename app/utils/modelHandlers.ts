@@ -188,7 +188,6 @@ export const loadModel = async (
       );
       setProgress(1); // Set progress to 100% if no files
       setStatus("Required files not found");
-      // return;
     }
 
     console.log("Required files:", requiredFiles);
