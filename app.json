@@ -25,11 +25,25 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": ["onnxruntime-react-native"],
+    "plugins": [
+      "onnxruntime-react-native",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 24
+          }
+        }
+      ]
+    ],
     "extra": {
       "eas": {
-        "projectId": "7790750f-d3f8-4852-a6c8-fc98b55a15b6"
+        "projectId": "5e498e2d-d1ae-454c-ad7b-6ea21d7df3f3"
       }
+    },
+    "runtimeVersion": "1.0.0",
+    "updates": {
+      "url": "https://u.expo.dev/5e498e2d-d1ae-454c-ad7b-6ea21d7df3f3"
     }
   }
 }
