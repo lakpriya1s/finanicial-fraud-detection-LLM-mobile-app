@@ -7,11 +7,13 @@ import {
   Image,
   SafeAreaView,
   Dimensions,
-  ScrollView,
   TouchableOpacity,
   Clipboard,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
+import { ScrollView } from "react-native-gesture-handler";
 import DropDownPicker from "react-native-dropdown-picker";
 import * as Progress from "react-native-progress";
 import {
@@ -202,194 +204,207 @@ const HomeScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView>
-        <View style={styles.topContent}>
-          <View style={styles.logoWrapper}>
-            <Image source={shield} style={styles.logo} />
-            <Text style={styles.logoText}>FraudSheild</Text>
-          </View>
-          <View style={styles.subTitle}>
-            <Text>Protecting users from financial fraud.</Text>
-          </View>
-          <View style={styles.imageWrapper}>
-            <Image source={user} style={styles.image} />
-          </View>
-          <Text style={styles.description}>
-            {`Received a suspicious message?\n\n Stay calm and verify it instantly with our financial fraud detection LLMs on your device!`}
-          </Text>
-        </View>
-        <View style={styles.bottomContent}>
-          <View style={styles.dropDownContainer}>
-            <Text style={styles.inputTitle}>Fraud Detection LLM</Text>
-            <View
-              style={[styles.dropDownWrapper, { zIndex: formatOpen ? 1 : 2 }]}
-            >
-              <DropDownPicker
-                open={open}
-                value={value}
-                items={items}
-                setOpen={setOpen}
-                setValue={setValue}
-                onChangeValue={handleValueChange}
-                setItems={setItems}
-                style={styles.dropDown}
-                placeholder="Select a Model"
-                disabled={downloadable}
-                zIndex={2}
-              />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.container}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+      >
+        <ScrollView
+          keyboardShouldPersistTaps={"handled"}
+          nestedScrollEnabled={true}
+        >
+          <View style={styles.topContent}>
+            <View style={styles.logoWrapper}>
+              <Image source={shield} style={styles.logo} />
+              <Text style={styles.logoText}>FraudSheild</Text>
             </View>
-
-            <Text style={[styles.inputTitle, { marginTop: 16 }]}>
-              Model Variants
+            <View style={styles.subTitle}>
+              <Text>Protecting users from financial fraud.</Text>
+            </View>
+            <View style={styles.imageWrapper}>
+              <Image source={user} style={styles.image} />
+            </View>
+            <Text style={styles.description}>
+              {`Received a suspicious message?\n\n Stay calm and verify it instantly with our financial fraud detection LLMs on your device!`}
             </Text>
-            <View
-              style={[styles.dropDownWrapper, { zIndex: formatOpen ? 2 : 1 }]}
-            >
-              {!value ? (
-                <View style={styles.selectModelFirstContainer}>
-                  <Text style={styles.selectModelFirstText}>
-                    Select a model first
-                  </Text>
-                </View>
-              ) : isCheckingFormats ? (
-                <View style={styles.loaderContainer}>
-                  <ActivityIndicator size="small" color="#0078d4" />
-                  <Text style={styles.loaderText}>
-                    Checking available formats...
-                  </Text>
-                </View>
-              ) : (
+          </View>
+          <View style={styles.bottomContent}>
+            <View style={styles.dropDownContainer}>
+              <Text style={styles.inputTitle}>Fraud Detection LLM</Text>
+              <View
+                style={[styles.dropDownWrapper, { zIndex: formatOpen ? 1 : 2 }]}
+              >
                 <DropDownPicker
-                  open={formatOpen}
-                  value={formatValue}
-                  items={formatItems}
-                  setOpen={setFormatOpen}
-                  setValue={setFormatValue}
-                  onChangeValue={handleFormatChange}
-                  setItems={setFormatItems}
+                  open={open}
+                  value={value}
+                  items={items}
+                  setOpen={setOpen}
+                  setValue={setValue}
+                  onChangeValue={handleValueChange}
+                  setItems={setItems}
                   style={styles.dropDown}
-                  dropDownContainerStyle={styles.dropDownContainer}
-                  listItemLabelStyle={styles.dropdownItemLabel}
-                  listItemContainerStyle={styles.dropdownItemContainer}
-                  placeholder="Select Model Format"
-                  placeholderStyle={styles.placeholderStyle}
-                  showArrowIcon={true}
-                  ArrowUpIconComponent={() => (
-                    <Ionicons name="chevron-up" size={16} color="#666" />
-                  )}
-                  ArrowDownIconComponent={() => (
-                    <Ionicons name="chevron-down" size={16} color="#666" />
-                  )}
+                  placeholder="Select a Model"
                   disabled={downloadable}
-                  zIndex={1}
+                  zIndex={2}
                 />
-              )}
-            </View>
+              </View>
 
-            <View style={styles.formatStatusContainer}>
-              {value && downloadedFormats.length > 0 && !isCheckingFormats && (
-                <View style={styles.formatStatusBadge}>
-                  <Text style={styles.formatStatusText}>
-                    {downloadedFormats.length} format
-                    {downloadedFormats.length !== 1 ? "s" : ""} available
-                    offline
-                  </Text>
-                </View>
-              )}
-            </View>
-
-            {downloadable && (
-              <View style={styles.progressBarContainer}>
-                <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  <Progress.Bar
-                    progress={progress}
-                    width={SCREEN_WIDTH - 80}
-                    height={8}
+              <Text style={[styles.inputTitle, { marginTop: 16 }]}>
+                Model Variants
+              </Text>
+              <View
+                style={[styles.dropDownWrapper, { zIndex: formatOpen ? 2 : 1 }]}
+              >
+                {!value ? (
+                  <View style={styles.selectModelFirstContainer}>
+                    <Text style={styles.selectModelFirstText}>
+                      Select a model first
+                    </Text>
+                  </View>
+                ) : isCheckingFormats ? (
+                  <View style={styles.loaderContainer}>
+                    <ActivityIndicator size="small" color="#0078d4" />
+                    <Text style={styles.loaderText}>
+                      Checking available formats...
+                    </Text>
+                  </View>
+                ) : (
+                  <DropDownPicker
+                    open={formatOpen}
+                    value={formatValue}
+                    items={formatItems}
+                    setOpen={setFormatOpen}
+                    setValue={setFormatValue}
+                    onChangeValue={handleFormatChange}
+                    setItems={setFormatItems}
+                    style={styles.dropDown}
+                    dropDownContainerStyle={styles.dropDownContainer}
+                    listItemLabelStyle={styles.dropdownItemLabel}
+                    listItemContainerStyle={styles.dropdownItemContainer}
+                    placeholder="Select Model Format"
+                    placeholderStyle={styles.placeholderStyle}
+                    showArrowIcon={true}
+                    ArrowUpIconComponent={() => (
+                      <Ionicons name="chevron-up" size={16} color="#666" />
+                    )}
+                    ArrowDownIconComponent={() => (
+                      <Ionicons name="chevron-down" size={16} color="#666" />
+                    )}
+                    disabled={downloadable}
+                    zIndex={1000}
+                    modalTitle="Select Model Format"
                   />
-                  <TouchableOpacity
-                    onPress={async () => {
-                      try {
-                        console.log("User pressed cancel button");
-                        await cancelDownload();
-                      } catch (error) {
-                        console.error("Error cancelling download:", error);
-                        resetDownloadState();
-                      } finally {
-                        setDownloadable(false);
-                        setProgress(0);
-                        setStatus("Download cancelled");
-                        setFormatValue(null);
+                )}
+              </View>
 
-                        // Refresh the format items list after cancelling
-                        if (value) {
-                          const preset = presets.find(
-                            (preset) => preset.name === value
-                          );
-                          if (preset) {
-                            checkDownloadedFormats(preset.name);
+              <View style={styles.formatStatusContainer}>
+                {value &&
+                  downloadedFormats.length > 0 &&
+                  !isCheckingFormats && (
+                    <View style={styles.formatStatusBadge}>
+                      <Text style={styles.formatStatusText}>
+                        {downloadedFormats.length} format
+                        {downloadedFormats.length !== 1 ? "s" : ""} available
+                        offline
+                      </Text>
+                    </View>
+                  )}
+              </View>
+
+              {downloadable && (
+                <View style={styles.progressBarContainer}>
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <Progress.Bar
+                      progress={progress}
+                      width={SCREEN_WIDTH - 80}
+                      height={8}
+                    />
+                    <TouchableOpacity
+                      onPress={async () => {
+                        try {
+                          console.log("User pressed cancel button");
+                          await cancelDownload();
+                        } catch (error) {
+                          console.error("Error cancelling download:", error);
+                          resetDownloadState();
+                        } finally {
+                          setDownloadable(false);
+                          setProgress(0);
+                          setStatus("Download cancelled");
+                          setFormatValue(null);
+
+                          // Refresh the format items list after cancelling
+                          if (value) {
+                            const preset = presets.find(
+                              (preset) => preset.name === value
+                            );
+                            if (preset) {
+                              checkDownloadedFormats(preset.name);
+                            }
                           }
                         }
-                      }
-                    }}
-                    style={{ marginLeft: 8 }}
+                      }}
+                      style={{ marginLeft: 8 }}
+                    >
+                      <Ionicons name="stop-circle" size={28} color="#FF3B30" />
+                    </TouchableOpacity>
+                  </View>
+                  <Text style={styles.progressBarText}>
+                    {(progress * 100).toFixed(2)}%
+                  </Text>
+                  <Text style={styles.progressBarText}>{status}</Text>
+                </View>
+              )}
+            </View>
+            <View style={styles.inputContainer}>
+              <View style={styles.inputTitleContainer}>
+                <Text style={styles.inputTitle}>Suspicious Message</Text>
+                <View style={styles.buttonRow}>
+                  <TouchableOpacity
+                    style={styles.pasteButton}
+                    onPress={handlePaste}
                   >
-                    <Ionicons name="stop-circle" size={28} color="#FF3B30" />
+                    <Text style={styles.pasteButtonText}>Paste</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.clearButton}
+                    onPress={handleClear}
+                  >
+                    <Text style={styles.clearButtonText}>Clear</Text>
                   </TouchableOpacity>
                 </View>
-                <Text style={styles.progressBarText}>
-                  {(progress * 100).toFixed(2)}%
-                </Text>
-                <Text style={styles.progressBarText}>{status}</Text>
               </View>
-            )}
-          </View>
-          <View style={styles.inputContainer}>
-            <View style={styles.inputTitleContainer}>
-              <Text style={styles.inputTitle}>Suspicious Message</Text>
-              <View style={styles.buttonRow}>
-                <TouchableOpacity
-                  style={styles.pasteButton}
-                  onPress={handlePaste}
-                >
-                  <Text style={styles.pasteButtonText}>Paste</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.clearButton}
-                  onPress={handleClear}
-                >
-                  <Text style={styles.clearButtonText}>Clear</Text>
-                </TouchableOpacity>
+              <View style={styles.messageInputWrapper}>
+                <TextInput
+                  style={styles.messageInput}
+                  placeholder="Enter Message"
+                  multiline={true}
+                  onChangeText={handleInputChange}
+                  value={input}
+                  textAlignVertical="top"
+                />
               </View>
             </View>
-            <View style={styles.messageInputWrapper}>
-              <TextInput
-                style={styles.messageInput}
-                placeholder="Enter Message"
-                multiline={true}
-                onChangeText={handleInputChange}
-                value={input}
+          </View>
+          <View style={styles.buttonContainer}>
+            <Button
+              title="Verify Message"
+              onPress={handleButtonPress}
+              disabled={downloadable || !input}
+            />
+          </View>
+        </ScrollView>
+        {showModal && (
+          <View style={styles.modalBackground}>
+            <View style={styles.modalCard}>
+              <AutoComplete
+                closeModal={() => setShowModal(false)}
+                input={input}
               />
             </View>
           </View>
-        </View>
-        <View style={styles.buttonContainer}>
-          <Button
-            title="Verify Message"
-            onPress={handleButtonPress}
-            disabled={downloadable || !input}
-          />
-        </View>
-      </ScrollView>
-      {showModal && (
-        <View style={styles.modalBackground}>
-          <View style={styles.modalCard}>
-            <AutoComplete
-              closeModal={() => setShowModal(false)}
-              input={input}
-            />
-          </View>
-        </View>
-      )}
+        )}
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -458,12 +473,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     zIndex: 2,
     borderRadius: 0,
+    maxHeight: 300,
   },
   dropDownWrapper: {
     width: "100%",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 16,
+    zIndex: 1000,
   },
   inputTitle: {
     fontSize: 16,
@@ -478,6 +495,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#8FAFDB",
     borderRadius: 0,
+    zIndex: 1000,
   },
   inputContainer: {
     marginTop: 32,
@@ -503,7 +521,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#ccc",
     padding: 10,
+    paddingTop: 10,
     backgroundColor: "#D1f1ff",
+    textAlignVertical: "top",
   },
   pasteButton: {
     backgroundColor: "#004AAD",
@@ -570,7 +590,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   dropdownItemContainer: {
-    // Each item will define its own background color based on downloaded status
+    maxHeight: 300,
   },
   placeholderStyle: {
     color: "#666",

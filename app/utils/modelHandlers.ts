@@ -208,19 +208,19 @@ export const loadModel = async (
       if (fileInfo.exists) {
         console.log("File exists locally: " + localPath);
         downloadedFiles++;
-        setProgress(downloadedFiles / fileCount);
+        // Only update status for completed files, not progress
+        setStatus(`File ${downloadedFiles}/${fileCount} already downloaded`);
         return localPath;
       }
 
       // Check again if cancelled before starting a new download
       if (isCancelled) {
         console.log("Download cancelled before starting a new file");
-        // Add a small delay to ensure cancellation propagates
         await new Promise((resolve) => setTimeout(resolve, 200));
         throw new Error("Download cancelled by user");
       }
 
-      setStatus(`Downloading file ${downloadedFiles + 1}/${fileCount}...`);
+      setStatus(`Downloading file ${downloadedFiles + 1}/${downloadedFiles + 1 > fileCount ? downloadedFiles + 1 : fileCount}...`);
       console.log("Downloading... " + url);
 
       try {
@@ -230,20 +230,16 @@ export const loadModel = async (
           {},
           (progress) => {
             if (isCancelled) return;
-            const currentFileProgress =
-              progress.totalBytesWritten / progress.totalBytesExpectedToWrite;
-            const totalProgress =
-              (downloadedFiles + currentFileProgress) / fileCount;
-            setProgress(totalProgress);
-            console.log("progress", totalProgress);
+            // Only show progress for the current file (0-100%)
+            const currentFileProgress = progress.totalBytesWritten / progress.totalBytesExpectedToWrite;
+            setProgress(currentFileProgress);
+            console.log("Current file progress:", Math.round(currentFileProgress * 100) + "%");
           }
         );
 
         const result = await activeDownloadTask.downloadAsync();
-        // Reset activeDownloadTask since this download is complete
         activeDownloadTask = null;
 
-        // Check if was cancelled during download
         if (isCancelled) {
           console.log("Download cancelled after file completed");
           throw new Error("Download cancelled by user");
@@ -256,13 +252,11 @@ export const loadModel = async (
         console.log("Downloaded as " + result.uri);
 
         downloadedFiles++;
-        // Ensure progress is updated correctly after file completes
-        // and capped at 100%
-        const newProgress = Math.min(downloadedFiles / fileCount, 1.0);
-        setProgress(newProgress);
-        setStatus(`Downloading files ${downloadedFiles}/${fileCount}...`);
+        // Reset progress for next file
+        setProgress(0);
+        setStatus(`File ${downloadedFiles}/${fileCount} downloaded successfully`);
 
-        return result.uri; // Return normalized path
+        return result.uri;
       } catch (error: any) {
         if (isCancelled || error.message?.includes("cancelled")) {
           console.log("Download of file cancelled");
