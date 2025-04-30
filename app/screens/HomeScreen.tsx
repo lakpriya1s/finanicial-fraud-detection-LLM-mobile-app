@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, SetStateAction } from "react";
 import {
   View,
   TextInput,
@@ -59,6 +59,10 @@ const HomeScreen = () => {
   const [formatItems, setFormatItems] = useState(MODEL_FORMATS);
   const [downloadedFormats, setDownloadedFormats] = useState<string[]>([]);
   const [isCheckingFormats, setIsCheckingFormats] = useState(false);
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  const [firstDropdownZIndex, setFirstDropdownZIndex] = useState(2000);
+  const [secondDropdownZIndex, setSecondDropdownZIndex] = useState(1000);
 
   const checkDownloadedFormats = async (modelName: string) => {
     if (!modelName) return;
@@ -145,6 +149,10 @@ const HomeScreen = () => {
 
     const onComplete = () => {
       setProgress(1);
+      // Check downloaded formats after successful download
+      if (value) {
+        checkDownloadedFormats(value);
+      }
       setTimeout(() => {
         setDownloadable(false);
       }, 500);
@@ -202,16 +210,47 @@ const HomeScreen = () => {
     setInput("");
   };
 
+  const handleFirstDropdownOpen = (isOpen: SetStateAction<boolean>) => {
+    setOpen(isOpen);
+    if (typeof isOpen === 'boolean') {
+      if (isOpen) {
+        setFirstDropdownZIndex(9999);
+        setSecondDropdownZIndex(1000);
+      } else {
+        setFirstDropdownZIndex(2000);
+        setSecondDropdownZIndex(1000);
+      }
+    }
+  };
+
+  const handleSecondDropdownOpen = (isOpen: SetStateAction<boolean>) => {
+    setFormatOpen(isOpen);
+    if (typeof isOpen === 'boolean') {
+      if (isOpen) {
+        setSecondDropdownZIndex(9999);
+        setFirstDropdownZIndex(1000);
+      } else {
+        setFirstDropdownZIndex(2000);
+        setSecondDropdownZIndex(1000);
+      }
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.container}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 20}
+        contentContainerStyle={{ flex: 1 }}
       >
         <ScrollView
+          ref={scrollViewRef}
           keyboardShouldPersistTaps={"handled"}
           nestedScrollEnabled={true}
+          scrollEnabled={!open && !formatOpen}
+          contentContainerStyle={styles.contentContainer}
+          style={styles.scrollView}
         >
           <View style={styles.topContent}>
             <View style={styles.logoWrapper}>
@@ -228,164 +267,162 @@ const HomeScreen = () => {
               {`Received a suspicious message?\n\n Stay calm and verify it instantly with our financial fraud detection LLMs on your device!`}
             </Text>
           </View>
-          <View style={styles.bottomContent}>
-            <View style={styles.dropDownContainer}>
-              <Text style={styles.inputTitle}>Fraud Detection LLM</Text>
-              <View
-                style={[styles.dropDownWrapper, { zIndex: formatOpen ? 1 : 2 }]}
-              >
-                <DropDownPicker
-                  open={open}
-                  value={value}
-                  items={items}
-                  setOpen={setOpen}
-                  setValue={setValue}
-                  onChangeValue={handleValueChange}
-                  setItems={setItems}
-                  style={styles.dropDown}
-                  placeholder="Select a Model"
-                  disabled={downloadable}
-                  zIndex={2}
-                />
-              </View>
 
-              <Text style={[styles.inputTitle, { marginTop: 16 }]}>
-                Model Variants
-              </Text>
-              <View
-                style={[styles.dropDownWrapper, { zIndex: formatOpen ? 2 : 1 }]}
-              >
-                {!value ? (
-                  <View style={styles.selectModelFirstContainer}>
-                    <Text style={styles.selectModelFirstText}>
-                      Select a model first
-                    </Text>
-                  </View>
-                ) : isCheckingFormats ? (
-                  <View style={styles.loaderContainer}>
-                    <ActivityIndicator size="small" color="#0078d4" />
-                    <Text style={styles.loaderText}>
-                      Checking available formats...
-                    </Text>
-                  </View>
-                ) : (
-                  <DropDownPicker
-                    open={formatOpen}
-                    value={formatValue}
-                    items={formatItems}
-                    setOpen={setFormatOpen}
-                    setValue={setFormatValue}
-                    onChangeValue={handleFormatChange}
-                    setItems={setFormatItems}
-                    style={styles.dropDown}
-                    dropDownContainerStyle={styles.dropDownContainer}
-                    listItemLabelStyle={styles.dropdownItemLabel}
-                    listItemContainerStyle={styles.dropdownItemContainer}
-                    placeholder="Select Model Format"
-                    placeholderStyle={styles.placeholderStyle}
-                    showArrowIcon={true}
-                    ArrowUpIconComponent={() => (
-                      <Ionicons name="chevron-up" size={16} color="#666" />
-                    )}
-                    ArrowDownIconComponent={() => (
-                      <Ionicons name="chevron-down" size={16} color="#666" />
-                    )}
-                    disabled={downloadable}
-                    zIndex={1000}
-                    modalTitle="Select Model Format"
-                  />
+          <Text style={styles.inputTitle}>Fraud Detection LLM</Text>
+          <View style={[styles.dropDownWrapper, { zIndex: firstDropdownZIndex }]}>
+            <DropDownPicker
+              open={open}
+              value={value}
+              items={items}
+              setOpen={handleFirstDropdownOpen}
+              setValue={setValue}
+              setItems={setItems}
+              style={styles.dropDown}
+              placeholder="Select a Model"
+              disabled={downloadable}
+              listMode="SCROLLVIEW"
+              zIndex={firstDropdownZIndex}
+              containerStyle={{ zIndex: firstDropdownZIndex }}
+            />
+          </View>
+
+          <Text style={[styles.inputTitle, { marginTop: 16 }]}>
+            Model Variants
+          </Text>
+          <View style={[styles.dropDownWrapper, { zIndex: secondDropdownZIndex }]}>
+            {!value ? (
+              <View style={styles.selectModelFirstContainer}>
+                <Text style={styles.selectModelFirstText}>
+                  Select a model first
+                </Text>
+              </View>
+            ) : isCheckingFormats ? (
+              <View style={styles.loaderContainer}>
+                <ActivityIndicator size="small" color="#0078d4" />
+                <Text style={styles.loaderText}>
+                  Checking available formats...
+                </Text>
+              </View>
+            ) : (
+              <DropDownPicker
+                open={formatOpen}
+                value={formatValue}
+                items={formatItems}
+                setOpen={handleSecondDropdownOpen}
+                setValue={setFormatValue}
+                setItems={setFormatItems}
+                style={styles.dropDown}
+                placeholder="Select Model Format"
+                placeholderStyle={styles.placeholderStyle}
+                showArrowIcon={true}
+                ArrowUpIconComponent={() => (
+                  <Ionicons name="chevron-up" size={16} color="#666" />
                 )}
-              </View>
+                ArrowDownIconComponent={() => (
+                  <Ionicons name="chevron-down" size={16} color="#666" />
+                )}
+                disabled={downloadable}
+                listMode="SCROLLVIEW"
+                zIndex={secondDropdownZIndex}
+                containerStyle={{ zIndex: secondDropdownZIndex }}
+              />
+            )}
+          </View>
 
-              <View style={styles.formatStatusContainer}>
-                {value &&
-                  downloadedFormats.length > 0 &&
-                  !isCheckingFormats && (
-                    <View style={styles.formatStatusBadge}>
-                      <Text style={styles.formatStatusText}>
-                        {downloadedFormats.length} format
-                        {downloadedFormats.length !== 1 ? "s" : ""} available
-                        offline
-                      </Text>
-                    </View>
-                  )}
-              </View>
-
-              {downloadable && (
-                <View style={styles.progressBarContainer}>
-                  <View style={{ flexDirection: "row", alignItems: "center" }}>
-                    <Progress.Bar
-                      progress={progress}
-                      width={SCREEN_WIDTH - 80}
-                      height={8}
-                    />
-                    <TouchableOpacity
-                      onPress={async () => {
-                        try {
-                          console.log("User pressed cancel button");
-                          await cancelDownload();
-                        } catch (error) {
-                          console.error("Error cancelling download:", error);
-                          resetDownloadState();
-                        } finally {
-                          setDownloadable(false);
-                          setProgress(0);
-                          setStatus("Download cancelled");
-                          setFormatValue(null);
-
-                          // Refresh the format items list after cancelling
-                          if (value) {
-                            const preset = presets.find(
-                              (preset) => preset.name === value
-                            );
-                            if (preset) {
-                              checkDownloadedFormats(preset.name);
-                            }
-                          }
-                        }
-                      }}
-                      style={{ marginLeft: 8 }}
-                    >
-                      <Ionicons name="stop-circle" size={28} color="#FF3B30" />
-                    </TouchableOpacity>
-                  </View>
-                  <Text style={styles.progressBarText}>
-                    {(progress * 100).toFixed(2)}%
+          <View style={styles.formatStatusContainer}>
+            {value &&
+              downloadedFormats.length > 0 &&
+              !isCheckingFormats && (
+                <View style={styles.formatStatusBadge}>
+                  <Text style={styles.formatStatusText}>
+                    {downloadedFormats.length} format
+                    {downloadedFormats.length !== 1 ? "s" : ""} available
+                    offline
                   </Text>
-                  <Text style={styles.progressBarText}>{status}</Text>
                 </View>
               )}
-            </View>
-            <View style={styles.inputContainer}>
-              <View style={styles.inputTitleContainer}>
-                <Text style={styles.inputTitle}>Suspicious Message</Text>
-                <View style={styles.buttonRow}>
-                  <TouchableOpacity
-                    style={styles.pasteButton}
-                    onPress={handlePaste}
-                  >
-                    <Text style={styles.pasteButtonText}>Paste</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.clearButton}
-                    onPress={handleClear}
-                  >
-                    <Text style={styles.clearButtonText}>Clear</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-              <View style={styles.messageInputWrapper}>
-                <TextInput
-                  style={styles.messageInput}
-                  placeholder="Enter Message"
-                  multiline={true}
-                  onChangeText={handleInputChange}
-                  value={input}
-                  textAlignVertical="top"
+          </View>
+
+          {downloadable && (
+            <View style={styles.progressBarContainer}>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <Progress.Bar
+                  progress={progress}
+                  width={SCREEN_WIDTH - 80}
+                  height={8}
                 />
+                <TouchableOpacity
+                  onPress={async () => {
+                    try {
+                      console.log("User pressed cancel button");
+                      await cancelDownload();
+                    } catch (error) {
+                      console.error("Error cancelling download:", error);
+                      resetDownloadState();
+                    } finally {
+                      setDownloadable(false);
+                      setProgress(0);
+                      setStatus("Download cancelled");
+                      setFormatValue(null);
+
+                      // Refresh the format items list after cancelling
+                      if (value) {
+                        const preset = presets.find(
+                          (preset) => preset.name === value
+                        );
+                        if (preset) {
+                          checkDownloadedFormats(preset.name);
+                        }
+                      }
+                    }
+                  }}
+                  style={{ marginLeft: 8 }}
+                >
+                  <Ionicons name="stop-circle" size={28} color="#FF3B30" />
+                </TouchableOpacity>
               </View>
+              <Text style={styles.progressBarText}>
+                {(progress * 100).toFixed(2)}%
+              </Text>
+              <Text style={styles.progressBarText}>{status}</Text>
+            </View>
+          )}
+
+          <View style={styles.inputContainer}>
+            <View style={styles.inputTitleContainer}>
+              <Text style={styles.inputTitle}>Suspicious Message</Text>
+              <View style={styles.buttonRow}>
+                <TouchableOpacity
+                  style={styles.pasteButton}
+                  onPress={handlePaste}
+                >
+                  <Text style={styles.pasteButtonText}>Paste</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.clearButton}
+                  onPress={handleClear}
+                >
+                  <Text style={styles.clearButtonText}>Clear</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+            <View style={styles.messageInputWrapper}>
+              <TextInput
+                style={styles.messageInput}
+                placeholder="Enter Message"
+                multiline={true}
+                onChangeText={handleInputChange}
+                value={input}
+                textAlignVertical="top"
+                onFocus={() => {
+                  setTimeout(() => {
+                    scrollViewRef.current?.scrollToEnd({ animated: true });
+                  }, 100);
+                }}
+              />
             </View>
           </View>
+
           <View style={styles.buttonContainer}>
             <Button
               title="Verify Message"
@@ -468,34 +505,39 @@ const styles = StyleSheet.create({
     padding: 16,
     zIndex: 2,
   },
-  dropDownContainer: {
-    width: "100%",
-    justifyContent: "center",
-    zIndex: 2,
-    borderRadius: 0,
-    maxHeight: 300,
-  },
   dropDownWrapper: {
     width: "100%",
-    alignItems: "center",
-    justifyContent: "center",
     marginBottom: 16,
+    position: 'relative',
+  },
+  dropDown: {
+    width: "100%",
+    backgroundColor: "#D1f1ff",
+    borderWidth: 1,
+    borderColor: "#8FAFDB",
+    borderRadius: 0,
+  },
+  dropDownContainer: {
+    width: "100%",
+    backgroundColor: "#D1f1ff",
+    borderWidth: 1,
+    borderColor: "#8FAFDB",
+    borderRadius: 0,
+    maxHeight: 300,
     zIndex: 1000,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   inputTitle: {
     fontSize: 16,
     fontWeight: "bold",
     marginBottom: 8,
-  },
-  dropDown: {
-    width: "100%",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#D1f1ff",
-    borderWidth: 1,
-    borderColor: "#8FAFDB",
-    borderRadius: 0,
-    zIndex: 1000,
   },
   inputContainer: {
     marginTop: 32,
@@ -552,6 +594,7 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
     justifyContent: "center",
     paddingHorizontal: 20,
+    marginTop: 16,
   },
   progressBarContainer: {
     width: "100%",
@@ -586,8 +629,16 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 20,
   },
+  modalContentContainer: {
+    backgroundColor: "#D1f1ff",
+    padding: 20,
+    borderRadius: 8,
+    maxHeight: "80%",
+    margin: 20,
+  },
   dropdownItemLabel: {
     fontSize: 14,
+    paddingVertical: 8,
   },
   dropdownItemContainer: {
     maxHeight: 300,
@@ -644,4 +695,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#666",
   },
+  contentContainer: {
+    paddingHorizontal: 10,
+  },
+  scrollView: {
+    marginBottom: 10,
+  },
 });
+

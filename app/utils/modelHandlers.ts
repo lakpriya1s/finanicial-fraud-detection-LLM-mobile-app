@@ -204,13 +204,27 @@ export const loadModel = async (
         await FileSystem.makeDirectoryAsync(localDir, { intermediates: true });
       }
 
-      const fileInfo = await FileSystem.getInfoAsync(localPath);
+      let fileInfo = await FileSystem.getInfoAsync(localPath);
       if (fileInfo.exists) {
         console.log("File exists locally: " + localPath);
-        downloadedFiles++;
-        // Only update status for completed files, not progress
-        setStatus(`File ${downloadedFiles}/${fileCount} already downloaded`);
-        return localPath;
+        // Add validation for JSON files
+        if (localPath.endsWith('.json')) {
+          try {
+            const content = await FileSystem.readAsStringAsync(localPath);
+            JSON.parse(content); // Validate JSON
+            console.log(`Valid JSON in ${localPath}`);
+          } catch (error) {
+            console.error(`Invalid JSON in ${localPath}:`, error);
+            // Delete the invalid file so it can be redownloaded
+            await FileSystem.deleteAsync(localPath);
+            fileInfo = await FileSystem.getInfoAsync(localPath); // Refresh file info
+          }
+        }
+        if (fileInfo.exists) {
+          downloadedFiles++;
+          setStatus(`File ${downloadedFiles}/${fileCount} already downloaded`);
+          return localPath;
+        }
       }
 
       // Check again if cancelled before starting a new download
