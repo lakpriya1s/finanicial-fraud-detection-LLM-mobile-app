@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Keyboard,
 } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import DropDownPicker from "react-native-dropdown-picker";
@@ -64,11 +65,11 @@ const HomeScreen = () => {
   const [firstDropdownZIndex, setFirstDropdownZIndex] = useState(2000);
   const [secondDropdownZIndex, setSecondDropdownZIndex] = useState(1000);
 
-  const checkDownloadedFormats = async (modelName: string) => {
+  const checkDownloadedFormats = async (modelName: string, silent: boolean = false) => {
     if (!modelName) return;
 
     // Show loader while checking
-    setIsCheckingFormats(true);
+    if(!silent) setIsCheckingFormats(true);
 
     const downloaded: string[] = [];
 
@@ -151,7 +152,7 @@ const HomeScreen = () => {
       setProgress(1);
       // Check downloaded formats after successful download
       if (value) {
-        checkDownloadedFormats(value);
+        checkDownloadedFormats(value, true);
       }
       setTimeout(() => {
         setDownloadable(false);
@@ -198,6 +199,7 @@ const HomeScreen = () => {
   };
 
   const handleButtonPress = () => {
+    Keyboard.dismiss();
     setShowModal(true);
   };
 
