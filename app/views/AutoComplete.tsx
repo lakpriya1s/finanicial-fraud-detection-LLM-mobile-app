@@ -221,10 +221,9 @@ const AutoComplete = ({
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    width: "100%",
     justifyContent: "flex-start",
     alignItems: "center",
-    padding: 16,
   },
   progressBarContainer: {
     marginTop: 32,

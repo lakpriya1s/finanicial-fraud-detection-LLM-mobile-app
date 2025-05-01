@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useRef, SetStateAction } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  SetStateAction,
+  useCallback,
+} from "react";
 import {
   View,
   TextInput,
@@ -13,6 +19,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Keyboard,
+  Alert,
 } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import DropDownPicker from "react-native-dropdown-picker";
@@ -22,6 +29,7 @@ import {
   cancelDownload,
   resetDownloadState,
   isModelDownloaded,
+  deleteModelFiles,
 } from "../utils/modelHandlers";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -64,12 +72,16 @@ const HomeScreen = () => {
 
   const [firstDropdownZIndex, setFirstDropdownZIndex] = useState(2000);
   const [secondDropdownZIndex, setSecondDropdownZIndex] = useState(1000);
+  const [downloadedVarients, setDownloadedVarients] = useState<string[]>([]);
 
-  const checkDownloadedFormats = async (modelName: string, silent: boolean = false) => {
+  const checkDownloadedFormats = async (
+    modelName: string,
+    silent: boolean = false
+  ) => {
     if (!modelName) return;
 
     // Show loader while checking
-    if(!silent) setIsCheckingFormats(true);
+    if (!silent) setIsCheckingFormats(true);
 
     const downloaded: string[] = [];
 
@@ -77,7 +89,9 @@ const HomeScreen = () => {
       const checkPromises = MODEL_FORMATS.map(async (format) => {
         const isDownloaded = await isModelDownloaded(modelName, format.value);
         if (isDownloaded) {
-          downloaded.push(format.value);
+          // downloaded.push(format.value);
+          downloadedVarients.push(format.value);
+          setDownloadedVarients(downloadedVarients);
         }
       });
 
@@ -90,16 +104,18 @@ const HomeScreen = () => {
           return {
             ...format,
             label: isDownloaded ? `${format.label} ` : format.label,
-            IconComponent: isDownloaded
+            icon: isDownloaded
               ? () => (
-                  <Ionicons
-                    name="cloud-done"
-                    size={16}
-                    color="#0078d4"
-                    style={{ marginRight: 5 }}
-                  />
+                  <View style={{ marginRight: 8 }}>
+                    <Ionicons
+                      name="cloud-done-outline"
+                      size={16}
+                      color="#0078d4"
+                    />
+                  </View>
                 )
-              : undefined,
+              : () => <View style={{ marginRight: 24 }}></View>,
+
             containerStyle: isDownloaded ? { backgroundColor: "#e6f7ff" } : {},
             labelStyle: isDownloaded
               ? { fontWeight: "bold", color: "#0078d4" }
@@ -173,6 +189,33 @@ const HomeScreen = () => {
     );
   };
 
+  const deleteModel = useCallback(
+    (model: string) => {
+      const handleDelete = () => {
+        if (!model || !value) return;
+        deleteModelFiles(model, value, () => {
+          if (value) {
+            checkDownloadedFormats(value);
+            setFormatValue(null);
+            setFormatOpen(false);
+            setDownloadedFormats([]);
+            setDownloadedVarients([]);
+          }
+        });
+      };
+
+      Alert.alert(
+        "Delete Model",
+        "Are you sure you want to delete this model?",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Delete", style: "destructive", onPress: handleDelete },
+        ]
+      );
+    },
+    [downloadedFormats, value]
+  );
+
   useEffect(() => {
     // Remove automatic format checking on mount
     // Only set checking formats to false to ensure UI shows properly
@@ -214,7 +257,7 @@ const HomeScreen = () => {
 
   const handleFirstDropdownOpen = (isOpen: SetStateAction<boolean>) => {
     setOpen(isOpen);
-    if (typeof isOpen === 'boolean') {
+    if (typeof isOpen === "boolean") {
       if (isOpen) {
         setFirstDropdownZIndex(9999);
         setSecondDropdownZIndex(1000);
@@ -227,7 +270,7 @@ const HomeScreen = () => {
 
   const handleSecondDropdownOpen = (isOpen: SetStateAction<boolean>) => {
     setFormatOpen(isOpen);
-    if (typeof isOpen === 'boolean') {
+    if (typeof isOpen === "boolean") {
       if (isOpen) {
         setSecondDropdownZIndex(9999);
         setFirstDropdownZIndex(1000);
@@ -271,7 +314,9 @@ const HomeScreen = () => {
           </View>
 
           <Text style={styles.inputTitle}>Fraud Detection LLM</Text>
-          <View style={[styles.dropDownWrapper, { zIndex: firstDropdownZIndex }]}>
+          <View
+            style={[styles.dropDownWrapper, { zIndex: firstDropdownZIndex }]}
+          >
             <DropDownPicker
               open={open}
               value={value}
@@ -291,7 +336,9 @@ const HomeScreen = () => {
           <Text style={[styles.inputTitle, { marginTop: 16 }]}>
             Model Variants
           </Text>
-          <View style={[styles.dropDownWrapper, { zIndex: secondDropdownZIndex }]}>
+          <View
+            style={[styles.dropDownWrapper, { zIndex: secondDropdownZIndex }]}
+          >
             {!value ? (
               <View style={styles.selectModelFirstContainer}>
                 <Text style={styles.selectModelFirstText}>
@@ -327,22 +374,56 @@ const HomeScreen = () => {
                 listMode="SCROLLVIEW"
                 zIndex={secondDropdownZIndex}
                 containerStyle={{ zIndex: secondDropdownZIndex }}
+                renderListItem={(props) => {
+                  const isDownloaded = downloadedVarients.includes(
+                    props?.item?.value || ""
+                  );
+                  return (
+                    <TouchableOpacity
+                      onPress={() => {
+                        if (props.item.value) {
+                          setFormatValue(props.item.value);
+                          setFormatOpen(false);
+                        }
+                      }}
+                      style={isDownloaded ? styles.downloadedItem : {}}
+                    >
+                      <View style={styles.varientItem}>
+                        <Text
+                          style={isDownloaded ? styles.downloadedItemText : {}}
+                        >
+                          {props.item.label}
+                        </Text>
+                        {props.item.value && isDownloaded && (
+                          <TouchableOpacity
+                            onPress={() => {
+                              deleteModel(props.item.value);
+                            }}
+                          >
+                            <Ionicons
+                              name="trash-outline"
+                              size={16}
+                              color="#FF3B30"
+                            />
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  );
+                }}
               />
             )}
           </View>
 
           <View style={styles.formatStatusContainer}>
-            {value &&
-              downloadedFormats.length > 0 &&
-              !isCheckingFormats && (
-                <View style={styles.formatStatusBadge}>
-                  <Text style={styles.formatStatusText}>
-                    {downloadedFormats.length} format
-                    {downloadedFormats.length !== 1 ? "s" : ""} available
-                    offline
-                  </Text>
-                </View>
-              )}
+            {value && downloadedFormats.length > 0 && !isCheckingFormats && (
+              <View style={styles.formatStatusBadge}>
+                <Text style={styles.formatStatusText}>
+                  {downloadedFormats.length} format
+                  {downloadedFormats.length !== 1 ? "s" : ""} available offline
+                </Text>
+              </View>
+            )}
           </View>
 
           {downloadable && (
@@ -424,12 +505,15 @@ const HomeScreen = () => {
               />
             </View>
           </View>
+          <Text style={styles.aiDisclaimer}>
+            AI can make mistakes. Check important info
+          </Text>
 
           <View style={styles.buttonContainer}>
             <Button
-              title="Verify Message"
+              title="Scan Message"
               onPress={handleButtonPress}
-              disabled={downloadable || !input}
+              disabled={downloadable || !input || !formatValue}
             />
           </View>
         </ScrollView>
@@ -510,7 +594,7 @@ const styles = StyleSheet.create({
   dropDownWrapper: {
     width: "100%",
     marginBottom: 16,
-    position: 'relative',
+    position: "relative",
   },
   dropDown: {
     width: "100%",
@@ -626,10 +710,10 @@ const styles = StyleSheet.create({
   },
   modalCard: {
     width: "100%",
-    minHeight: "50%",
     backgroundColor: "white",
     borderRadius: 10,
     padding: 20,
+    maxHeight: "90%",
   },
   modalContentContainer: {
     backgroundColor: "#D1f1ff",
@@ -703,5 +787,24 @@ const styles = StyleSheet.create({
   scrollView: {
     marginBottom: 10,
   },
+  aiDisclaimer: {
+    fontSize: 12,
+    color: "#666",
+    textAlign: "center",
+    marginTop: 16,
+  },
+  varientItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+  },
+  downloadedItem: {
+    backgroundColor: "#e6f7ff",
+  },
+  downloadedItemText: {
+    fontWeight: "bold",
+    color: "#0078d4",
+  },
 });
-

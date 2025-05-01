@@ -208,7 +208,7 @@ export const loadModel = async (
       if (fileInfo.exists) {
         console.log("File exists locally: " + localPath);
         // Add validation for JSON files
-        if (localPath.endsWith('.json')) {
+        if (localPath.endsWith(".json")) {
           try {
             const content = await FileSystem.readAsStringAsync(localPath);
             JSON.parse(content); // Validate JSON
@@ -234,7 +234,11 @@ export const loadModel = async (
         throw new Error("Download cancelled by user");
       }
 
-      setStatus(`Downloading file ${downloadedFiles + 1}/${downloadedFiles + 1 > fileCount ? downloadedFiles + 1 : fileCount}...`);
+      setStatus(
+        `Downloading file ${downloadedFiles + 1}/${
+          downloadedFiles + 1 > fileCount ? downloadedFiles + 1 : fileCount
+        }...`
+      );
       console.log("Downloading... " + url);
 
       try {
@@ -245,9 +249,13 @@ export const loadModel = async (
           (progress) => {
             if (isCancelled) return;
             // Only show progress for the current file (0-100%)
-            const currentFileProgress = progress.totalBytesWritten / progress.totalBytesExpectedToWrite;
+            const currentFileProgress =
+              progress.totalBytesWritten / progress.totalBytesExpectedToWrite;
             setProgress(currentFileProgress);
-            console.log("Current file progress:", Math.round(currentFileProgress * 100) + "%");
+            console.log(
+              "Current file progress:",
+              Math.round(currentFileProgress * 100) + "%"
+            );
           }
         );
 
@@ -268,7 +276,9 @@ export const loadModel = async (
         downloadedFiles++;
         // Reset progress for next file
         setProgress(0);
-        setStatus(`File ${downloadedFiles}/${fileCount} downloaded successfully`);
+        setStatus(
+          `File ${downloadedFiles}/${fileCount} downloaded successfully`
+        );
 
         return result.uri;
       } catch (error: any) {
@@ -346,5 +356,21 @@ export const loadModel = async (
       setStatus("Download cancelled");
     }
     abortController = null;
+  }
+};
+
+export const deleteModelFiles = async (
+  modelName: string,
+  llmName: string,
+  callback?: () => void
+) => {
+  try {
+    const modelPath = FileSystem.cacheDirectory + `${llmName}/${modelName}`;
+    console.log("Deleting model files from:", modelPath);
+    await FileSystem.deleteAsync(modelPath, { idempotent: true });
+    console.log("Model files deleted successfully");
+    callback?.();
+  } catch (error) {
+    console.error("Error deleting model files:", error);
   }
 };
