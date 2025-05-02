@@ -73,6 +73,7 @@ const HomeScreen = () => {
   const [firstDropdownZIndex, setFirstDropdownZIndex] = useState(2000);
   const [secondDropdownZIndex, setSecondDropdownZIndex] = useState(1000);
   const [downloadedVarients, setDownloadedVarients] = useState<string[]>([]);
+  const isAndroid = Platform.OS === "android";
 
   const checkDownloadedFormats = async (
     modelName: string,
@@ -327,7 +328,7 @@ const HomeScreen = () => {
               style={styles.dropDown}
               placeholder="Select a Model"
               disabled={downloadable}
-              listMode="SCROLLVIEW"
+              listMode={"SCROLLVIEW"}
               zIndex={firstDropdownZIndex}
               containerStyle={{ zIndex: firstDropdownZIndex }}
             />
@@ -371,7 +372,11 @@ const HomeScreen = () => {
                   <Ionicons name="chevron-down" size={16} color="#666" />
                 )}
                 disabled={downloadable}
-                listMode="SCROLLVIEW"
+                listMode={!isAndroid ? "SCROLLVIEW" : "MODAL"}
+                modalTitle="Select Model Varient"
+                modalTitleStyle={{
+                  marginTop: 16,
+                }}
                 zIndex={secondDropdownZIndex}
                 containerStyle={{ zIndex: secondDropdownZIndex }}
                 renderListItem={(props) => {
@@ -414,7 +419,6 @@ const HomeScreen = () => {
               />
             )}
           </View>
-
           <View style={styles.formatStatusContainer}>
             {value && downloadedFormats.length > 0 && !isCheckingFormats && (
               <View style={styles.formatStatusBadge}>
@@ -425,7 +429,6 @@ const HomeScreen = () => {
               </View>
             )}
           </View>
-
           {downloadable && (
             <View style={styles.progressBarContainer}>
               <View style={{ flexDirection: "row", alignItems: "center" }}>
