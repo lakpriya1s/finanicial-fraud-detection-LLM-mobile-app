@@ -24,6 +24,7 @@ import {
 import { ScrollView } from "react-native-gesture-handler";
 import DropDownPicker from "react-native-dropdown-picker";
 import * as Progress from "react-native-progress";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   loadModel,
   cancelDownload,
@@ -33,13 +34,15 @@ import {
 } from "../utils/modelHandlers";
 import { Ionicons } from "@expo/vector-icons";
 
-import presets from "../../presets.json";
 import user from "../../assets/confused-user.png";
 import shield from "../../assets/shield.png";
 import Button from "../components/Button";
 import AutoComplete from "../views/AutoComplete";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
+const PRESETS_URL =
+  "https://raw.githubusercontent.com/lakpriya1s/llm-financial-fraud-detection/refs/heads/main/presets.json";
+const PRESETS_CACHE_KEY = "@fraudshield_presets";
 
 const MODEL_FORMATS = [
   { label: "Full precision baseline", value: "model.onnx" },
@@ -62,9 +65,8 @@ const HomeScreen = () => {
   const [formatOpen, setFormatOpen] = useState(false);
   const [value, setValue] = useState<string | null>(null);
   const [formatValue, setFormatValue] = useState<string | null>(null);
-  const [items, setItems] = useState([
-    ...presets.map((preset) => ({ label: preset.name, value: preset.name })),
-  ]);
+  const [presets, setPresets] = useState<any[]>([]);
+  const [items, setItems] = useState<any[]>([]);
   const [formatItems, setFormatItems] = useState(MODEL_FORMATS);
   const [downloadedFormats, setDownloadedFormats] = useState<string[]>([]);
   const [isCheckingFormats, setIsCheckingFormats] = useState(false);
@@ -81,7 +83,6 @@ const HomeScreen = () => {
   ) => {
     if (!modelName) return;
 
-    // Show loader while checking
     if (!silent) setIsCheckingFormats(true);
 
     const downloaded: string[] = [];
@@ -105,18 +106,6 @@ const HomeScreen = () => {
           return {
             ...format,
             label: isDownloaded ? `${format.label} ` : format.label,
-            icon: isDownloaded
-              ? () => (
-                  <View style={{ marginRight: 8 }}>
-                    <Ionicons
-                      name="cloud-done-outline"
-                      size={16}
-                      color="#0078d4"
-                    />
-                  </View>
-                )
-              : () => <View style={{ marginRight: 24 }}></View>,
-
             containerStyle: isDownloaded ? { backgroundColor: "#e6f7ff" } : {},
             labelStyle: isDownloaded
               ? { fontWeight: "bold", color: "#0078d4" }
@@ -125,33 +114,10 @@ const HomeScreen = () => {
         })
       );
     } catch (error) {
-      console.error("Error checking formats:", error);
+      console.error("Error checking variants:", error);
     } finally {
-      // Hide loader when done
       setIsCheckingFormats(false);
     }
-  };
-
-  const handleValueChange = async (value: any) => {
-    setValue(value);
-    setFormatValue(null);
-    setDownloadable(false);
-
-    // Clear downloaded formats until check completes
-    setDownloadedFormats([]);
-
-    // Only check format availability after a model is selected
-    if (value) {
-      const preset = presets.find((preset) => preset.name === value);
-      if (preset) {
-        // This will set isCheckingFormats to true internally
-        checkDownloadedFormats(preset.name);
-      }
-    }
-  };
-
-  const handleFormatChange = (formatValue: string | null) => {
-    setFormatValue(formatValue);
   };
 
   const loadSelectedModel = async () => {
@@ -167,7 +133,6 @@ const HomeScreen = () => {
 
     const onComplete = () => {
       setProgress(1);
-      // Check downloaded formats after successful download
       if (value) {
         checkDownloadedFormats(value, true);
       }
@@ -218,8 +183,6 @@ const HomeScreen = () => {
   );
 
   useEffect(() => {
-    // Remove automatic format checking on mount
-    // Only set checking formats to false to ensure UI shows properly
     setIsCheckingFormats(false);
   }, []);
 
@@ -228,8 +191,6 @@ const HomeScreen = () => {
   }, [value, formatValue]);
 
   useEffect(() => {
-    // Only check formats if we're not currently downloading (progress is 0 or 1)
-    // and value is defined, and we're not in a loading state
     if (value && (progress === 0 || progress === 1) && !downloadable) {
       const preset = presets.find((preset) => preset.name === value);
       if (preset) {
@@ -237,6 +198,44 @@ const HomeScreen = () => {
       }
     }
   }, [value, progress]);
+
+  useEffect(() => {
+    const fetchPresets = async () => {
+      try {
+        const response = await fetch(PRESETS_URL);
+        const data = await response.json();
+
+        setPresets(data);
+        setItems(
+          data.map((preset: any) => ({
+            label: preset.name,
+            value: preset.name,
+          }))
+        );
+
+        await AsyncStorage.setItem(PRESETS_CACHE_KEY, JSON.stringify(data));
+      } catch (error) {
+        console.error("Error fetching presets:", error);
+        try {
+          const cachedPresets = await AsyncStorage.getItem(PRESETS_CACHE_KEY);
+          if (cachedPresets) {
+            const parsedPresets = JSON.parse(cachedPresets);
+            setPresets(parsedPresets);
+            setItems(
+              parsedPresets.map((preset: any) => ({
+                label: preset.name,
+                value: preset.name,
+              }))
+            );
+          }
+        } catch (cacheError) {
+          console.error("Error using cached presets:", cacheError);
+        }
+      }
+    };
+
+    fetchPresets();
+  }, []);
 
   const handleInputChange = (text: string) => {
     setInput(text);
@@ -350,7 +349,7 @@ const HomeScreen = () => {
               <View style={styles.loaderContainer}>
                 <ActivityIndicator size="small" color="#0078d4" />
                 <Text style={styles.loaderText}>
-                  Checking available formats...
+                  Checking available variants...
                 </Text>
               </View>
             ) : (
@@ -362,7 +361,7 @@ const HomeScreen = () => {
                 setValue={setFormatValue}
                 setItems={setFormatItems}
                 style={styles.dropDown}
-                placeholder="Select Model Format"
+                placeholder="Select Model Variant"
                 placeholderStyle={styles.placeholderStyle}
                 showArrowIcon={true}
                 ArrowUpIconComponent={() => (
@@ -402,7 +401,7 @@ const HomeScreen = () => {
                         {props.item.value && isDownloaded && (
                           <TouchableOpacity
                             onPress={() => {
-                              deleteModel(props.item.value);
+                              deleteModel(props.item?.value || "");
                             }}
                           >
                             <Ionicons

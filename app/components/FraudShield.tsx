@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,11 +7,8 @@ import {
   StyleSheet,
   Image,
   Modal,
-  Platform,
   ScrollView,
-  ActivityIndicator,
 } from "react-native";
-import presets from "../../presets.json";
 
 interface ModelPreset {
   name: string;
@@ -30,27 +27,12 @@ interface ModelState {
   error?: string;
 }
 
-const getModelDescription = (modelName: string): string => {
-  if (modelName.includes("Qwen1.5")) {
-    return "Fast and efficient model optimized for fraud detection using Qwen1.5 architecture";
-  } else if (modelName.includes("TinyLlama")) {
-    return "Lightweight model based on TinyLlama, good balance of speed and accuracy";
-  } else if (modelName.includes("Llama-160M")) {
-    return "Compact Llama model specialized for quick fraud analysis";
-  } else {
-    return "Custom-trained model for fraud detection";
-  }
-};
-
-const getModelSize = (modelName: string): string => {
-  if (modelName.includes("0.5B")) return "0.5B parameters";
-  if (modelName.includes("1.1B")) return "1.1B parameters";
-  if (modelName.includes("160M")) return "160M parameters";
-  return "Custom size";
-};
+const PRESETS_URL =
+  "https://raw.githubusercontent.com/lakpriya1s/llm-financial-fraud-detection/refs/heads/main/presets.json";
 
 const FraudShield = () => {
-  const [selectedModel, setSelectedModel] = useState<string | null>(null);
+  const [presets, setPresets] = useState<ModelPreset[]>([]);
+  const [selectedModel, setSelectedModel] = useState<string>("");
   const [message, setMessage] = useState("");
   const [showResult, setShowResult] = useState(false);
   const [isFraud, setIsFraud] = useState(false);
@@ -62,20 +44,32 @@ const FraudShield = () => {
   });
 
   const scrollViewRef = useRef<ScrollView>(null);
-  const cardWidth = 215; // card width (200) + margin right (15)
+  const cardWidth = 215;
+
+  useEffect(() => {
+    const fetchPresets = async () => {
+      try {
+        const response = await fetch(PRESETS_URL);
+        const data = await response.json();
+        setPresets(data);
+      } catch (error) {
+        console.error("Error fetching presets:", error);
+      }
+    };
+
+    fetchPresets();
+  }, []);
 
   const handleModelSelect = async (modelName: string, index: number) => {
     setSelectedModel(modelName);
     setModelState({ loading: true, progress: 0, loaded: false });
 
-    // Scroll to the selected card
     scrollViewRef.current?.scrollTo({
       x: index * cardWidth,
       animated: true,
     });
 
     try {
-      // Simulate model loading with progress
       for (let i = 0; i <= 100; i += 20) {
         await new Promise((resolve) => setTimeout(resolve, 300));
         setModelState((prev) => ({
