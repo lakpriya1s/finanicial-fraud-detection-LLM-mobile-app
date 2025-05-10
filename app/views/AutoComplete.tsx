@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -43,7 +43,7 @@ const AutoComplete = ({
   const [output, setOutput] = useState<string>();
   const [loading, setLoading] = useState<boolean>(false);
   const [showImprovement, setShowImprovement] = useState<boolean>(false);
-  const [detectionTime, setDetectionTime] = useState<number>(0);
+  const detectionTime = useRef<number>(0);
 
   const startTime = Date.now();
 
@@ -53,7 +53,8 @@ const AutoComplete = ({
     // Only measure time for first 3 letters since that's what determines fraud
     const firstThreeLetters = output.substring(0, 3).toLowerCase();
     const isFraud = firstThreeLetters.includes("yes");
-    setDetectionTime(Date.now() - startTime);
+    if (detectionTime.current) return;
+    detectionTime.current = Date.now() - startTime;
   };
 
   const handleCloseModal = () => {
@@ -97,7 +98,7 @@ const AutoComplete = ({
     Pipeline.TextGeneration.generate(chatPrompt, handlePipelineComplete);
   }, [input]);
 
-  console.log("OUTPUT ==> ", output);
+  // console.log("OUTPUT ==> ", output);
 
   const isFraud = output?.toLowerCase().includes("yes");
   const isOutputComplete = !!output && output.length >= 3;
@@ -107,8 +108,8 @@ const AutoComplete = ({
   return (
     <View style={styles.container}>
       <View style={styles.closeButtonContainer}>
-        <TouchableOpacity onPress={handleCloseModal}>
-          <Text style={styles.closeButtonText}>Close</Text>
+        <TouchableOpacity onPress={handleCloseModal} style={styles.closeButton}>
+          <Text style={styles.closeButtonText}>×</Text>
         </TouchableOpacity>
       </View>
       {!showImprovement ? (
@@ -134,7 +135,7 @@ const AutoComplete = ({
                 personal details!
               </Text>
               <Text style={styles.timeText}>
-                Detection time: {detectionTime}ms
+                Detection time: {detectionTime.current}ms
               </Text>
               <View style={styles.feedbackContainer}>
                 <Text>How did we do?</Text>
@@ -163,7 +164,7 @@ const AutoComplete = ({
                 confidence.
               </Text>
               <Text style={styles.timeText}>
-                Detection time: {detectionTime}ms
+                Detection time: {detectionTime.current}ms
               </Text>
               <View style={styles.feedbackContainer}>
                 <Text>How did we do?</Text>
@@ -220,10 +221,9 @@ const AutoComplete = ({
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    width: "100%",
     justifyContent: "flex-start",
     alignItems: "center",
-    padding: 16,
   },
   progressBarContainer: {
     marginTop: 32,
@@ -234,9 +234,18 @@ const styles = StyleSheet.create({
     width: "100%",
     alignItems: "flex-end",
   },
+  closeButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   closeButtonText: {
-    fontSize: 16,
+    fontSize: 24,
     fontWeight: "bold",
+    color: '#666',
   },
   loadingText: {
     marginTop: 16,

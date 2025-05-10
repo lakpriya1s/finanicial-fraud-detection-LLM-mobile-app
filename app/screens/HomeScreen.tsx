@@ -1,4 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  SetStateAction,
+  useCallback,
+} from "react";
 import {
   View,
   TextInput,
@@ -7,28 +13,36 @@ import {
   Image,
   SafeAreaView,
   Dimensions,
-  ScrollView,
   TouchableOpacity,
   Clipboard,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Keyboard,
+  Alert,
 } from "react-native";
+import { ScrollView } from "react-native-gesture-handler";
 import DropDownPicker from "react-native-dropdown-picker";
 import * as Progress from "react-native-progress";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   loadModel,
   cancelDownload,
   resetDownloadState,
   isModelDownloaded,
+  deleteModelFiles,
 } from "../utils/modelHandlers";
 import { Ionicons } from "@expo/vector-icons";
 
-import presets from "../../presets.json";
 import user from "../../assets/confused-user.png";
 import shield from "../../assets/shield.png";
 import Button from "../components/Button";
 import AutoComplete from "../views/AutoComplete";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
+const PRESETS_URL =
+  "https://raw.githubusercontent.com/lakpriya1s/llm-financial-fraud-detection/refs/heads/main/presets.json";
+const PRESETS_CACHE_KEY = "@fraudshield_presets";
 
 const MODEL_FORMATS = [
   { label: "Full precision baseline", value: "model.onnx" },
@@ -51,18 +65,25 @@ const HomeScreen = () => {
   const [formatOpen, setFormatOpen] = useState(false);
   const [value, setValue] = useState<string | null>(null);
   const [formatValue, setFormatValue] = useState<string | null>(null);
-  const [items, setItems] = useState([
-    ...presets.map((preset) => ({ label: preset.name, value: preset.name })),
-  ]);
+  const [presets, setPresets] = useState<any[]>([]);
+  const [items, setItems] = useState<any[]>([]);
   const [formatItems, setFormatItems] = useState(MODEL_FORMATS);
   const [downloadedFormats, setDownloadedFormats] = useState<string[]>([]);
   const [isCheckingFormats, setIsCheckingFormats] = useState(false);
+  const scrollViewRef = useRef<ScrollView>(null);
 
-  const checkDownloadedFormats = async (modelName: string) => {
+  const [firstDropdownZIndex, setFirstDropdownZIndex] = useState(2000);
+  const [secondDropdownZIndex, setSecondDropdownZIndex] = useState(1000);
+  const [downloadedVarients, setDownloadedVarients] = useState<string[]>([]);
+  const isAndroid = Platform.OS === "android";
+
+  const checkDownloadedFormats = async (
+    modelName: string,
+    silent: boolean = false
+  ) => {
     if (!modelName) return;
 
-    // Show loader while checking
-    setIsCheckingFormats(true);
+    if (!silent) setIsCheckingFormats(true);
 
     const downloaded: string[] = [];
 
@@ -70,7 +91,9 @@ const HomeScreen = () => {
       const checkPromises = MODEL_FORMATS.map(async (format) => {
         const isDownloaded = await isModelDownloaded(modelName, format.value);
         if (isDownloaded) {
-          downloaded.push(format.value);
+          // downloaded.push(format.value);
+          downloadedVarients.push(format.value);
+          setDownloadedVarients(downloadedVarients);
         }
       });
 
@@ -83,16 +106,6 @@ const HomeScreen = () => {
           return {
             ...format,
             label: isDownloaded ? `${format.label} ` : format.label,
-            IconComponent: isDownloaded
-              ? () => (
-                  <Ionicons
-                    name="cloud-done"
-                    size={16}
-                    color="#0078d4"
-                    style={{ marginRight: 5 }}
-                  />
-                )
-              : undefined,
             containerStyle: isDownloaded ? { backgroundColor: "#e6f7ff" } : {},
             labelStyle: isDownloaded
               ? { fontWeight: "bold", color: "#0078d4" }
@@ -101,33 +114,10 @@ const HomeScreen = () => {
         })
       );
     } catch (error) {
-      console.error("Error checking formats:", error);
+      console.error("Error checking variants:", error);
     } finally {
-      // Hide loader when done
       setIsCheckingFormats(false);
     }
-  };
-
-  const handleValueChange = async (value: any) => {
-    setValue(value);
-    setFormatValue(null);
-    setDownloadable(false);
-
-    // Clear downloaded formats until check completes
-    setDownloadedFormats([]);
-
-    // Only check format availability after a model is selected
-    if (value) {
-      const preset = presets.find((preset) => preset.name === value);
-      if (preset) {
-        // This will set isCheckingFormats to true internally
-        checkDownloadedFormats(preset.name);
-      }
-    }
-  };
-
-  const handleFormatChange = (formatValue: string | null) => {
-    setFormatValue(formatValue);
   };
 
   const loadSelectedModel = async () => {
@@ -143,6 +133,9 @@ const HomeScreen = () => {
 
     const onComplete = () => {
       setProgress(1);
+      if (value) {
+        checkDownloadedFormats(value, true);
+      }
       setTimeout(() => {
         setDownloadable(false);
       }, 500);
@@ -162,9 +155,34 @@ const HomeScreen = () => {
     );
   };
 
+  const deleteModel = useCallback(
+    (model: string) => {
+      const handleDelete = () => {
+        if (!model || !value) return;
+        deleteModelFiles(model, value, () => {
+          if (value) {
+            checkDownloadedFormats(value);
+            setFormatValue(null);
+            setFormatOpen(false);
+            setDownloadedFormats([]);
+            setDownloadedVarients([]);
+          }
+        });
+      };
+
+      Alert.alert(
+        "Delete Model",
+        "Are you sure you want to delete this model?",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Delete", style: "destructive", onPress: handleDelete },
+        ]
+      );
+    },
+    [downloadedFormats, value]
+  );
+
   useEffect(() => {
-    // Remove automatic format checking on mount
-    // Only set checking formats to false to ensure UI shows properly
     setIsCheckingFormats(false);
   }, []);
 
@@ -173,8 +191,6 @@ const HomeScreen = () => {
   }, [value, formatValue]);
 
   useEffect(() => {
-    // Only check formats if we're not currently downloading (progress is 0 or 1)
-    // and value is defined, and we're not in a loading state
     if (value && (progress === 0 || progress === 1) && !downloadable) {
       const preset = presets.find((preset) => preset.name === value);
       if (preset) {
@@ -183,11 +199,50 @@ const HomeScreen = () => {
     }
   }, [value, progress]);
 
+  useEffect(() => {
+    const fetchPresets = async () => {
+      try {
+        const response = await fetch(PRESETS_URL);
+        const data = await response.json();
+
+        setPresets(data);
+        setItems(
+          data.map((preset: any) => ({
+            label: preset.name,
+            value: preset.name,
+          }))
+        );
+
+        await AsyncStorage.setItem(PRESETS_CACHE_KEY, JSON.stringify(data));
+      } catch (error) {
+        console.error("Error fetching presets:", error);
+        try {
+          const cachedPresets = await AsyncStorage.getItem(PRESETS_CACHE_KEY);
+          if (cachedPresets) {
+            const parsedPresets = JSON.parse(cachedPresets);
+            setPresets(parsedPresets);
+            setItems(
+              parsedPresets.map((preset: any) => ({
+                label: preset.name,
+                value: preset.name,
+              }))
+            );
+          }
+        } catch (cacheError) {
+          console.error("Error using cached presets:", cacheError);
+        }
+      }
+    };
+
+    fetchPresets();
+  }, []);
+
   const handleInputChange = (text: string) => {
     setInput(text);
   };
 
   const handleButtonPress = () => {
+    Keyboard.dismiss();
     setShowModal(true);
   };
 
@@ -200,149 +255,224 @@ const HomeScreen = () => {
     setInput("");
   };
 
+  const handleFirstDropdownOpen = (isOpen: SetStateAction<boolean>) => {
+    setOpen(isOpen);
+    if (typeof isOpen === "boolean") {
+      if (isOpen) {
+        setFirstDropdownZIndex(9999);
+        setSecondDropdownZIndex(1000);
+      } else {
+        setFirstDropdownZIndex(2000);
+        setSecondDropdownZIndex(1000);
+      }
+    }
+  };
+
+  const handleSecondDropdownOpen = (isOpen: SetStateAction<boolean>) => {
+    setFormatOpen(isOpen);
+    if (typeof isOpen === "boolean") {
+      if (isOpen) {
+        setSecondDropdownZIndex(9999);
+        setFirstDropdownZIndex(1000);
+      } else {
+        setFirstDropdownZIndex(2000);
+        setSecondDropdownZIndex(1000);
+      }
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView>
-        <View style={styles.topContent}>
-          <View style={styles.logoWrapper}>
-            <Image source={shield} style={styles.logo} />
-            <Text style={styles.logoText}>FraudSheild</Text>
-          </View>
-          <View style={styles.subTitle}>
-            <Text>Protecting users from financial fraud.</Text>
-          </View>
-          <View style={styles.imageWrapper}>
-            <Image source={user} style={styles.image} />
-          </View>
-          <Text style={styles.description}>
-            {`Received a suspicious message?\n\n Stay calm and verify it instantly with our financial fraud detection LLMs on your device!`}
-          </Text>
-        </View>
-        <View style={styles.bottomContent}>
-          <View style={styles.dropDownContainer}>
-            <Text style={styles.inputTitle}>Fraud Detection LLM</Text>
-            <View
-              style={[styles.dropDownWrapper, { zIndex: formatOpen ? 1 : 2 }]}
-            >
-              <DropDownPicker
-                open={open}
-                value={value}
-                items={items}
-                setOpen={setOpen}
-                setValue={setValue}
-                onChangeValue={handleValueChange}
-                setItems={setItems}
-                style={styles.dropDown}
-                placeholder="Select a Model"
-                disabled={downloadable}
-                zIndex={2}
-              />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.container}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 20}
+        contentContainerStyle={{ flex: 1 }}
+      >
+        <ScrollView
+          ref={scrollViewRef}
+          keyboardShouldPersistTaps={"handled"}
+          nestedScrollEnabled={true}
+          scrollEnabled={!open && !formatOpen}
+          contentContainerStyle={styles.contentContainer}
+          style={styles.scrollView}
+        >
+          <View style={styles.topContent}>
+            <View style={styles.logoWrapper}>
+              <Image source={shield} style={styles.logo} />
+              <Text style={styles.logoText}>FraudSheild</Text>
             </View>
-
-            <Text style={[styles.inputTitle, { marginTop: 16 }]}>
-              Model Variants
+            <View style={styles.subTitle}>
+              <Text>Protecting users from financial fraud.</Text>
+            </View>
+            <View style={styles.imageWrapper}>
+              <Image source={user} style={styles.image} />
+            </View>
+            <Text style={styles.description}>
+              {`Received a suspicious message?\n\n Stay calm and verify it instantly with our financial fraud detection LLMs on your device!`}
             </Text>
-            <View
-              style={[styles.dropDownWrapper, { zIndex: formatOpen ? 2 : 1 }]}
-            >
-              {!value ? (
-                <View style={styles.selectModelFirstContainer}>
-                  <Text style={styles.selectModelFirstText}>
-                    Select a model first
-                  </Text>
-                </View>
-              ) : isCheckingFormats ? (
-                <View style={styles.loaderContainer}>
-                  <ActivityIndicator size="small" color="#0078d4" />
-                  <Text style={styles.loaderText}>
-                    Checking available formats...
-                  </Text>
-                </View>
-              ) : (
-                <DropDownPicker
-                  open={formatOpen}
-                  value={formatValue}
-                  items={formatItems}
-                  setOpen={setFormatOpen}
-                  setValue={setFormatValue}
-                  onChangeValue={handleFormatChange}
-                  setItems={setFormatItems}
-                  style={styles.dropDown}
-                  dropDownContainerStyle={styles.dropDownContainer}
-                  listItemLabelStyle={styles.dropdownItemLabel}
-                  listItemContainerStyle={styles.dropdownItemContainer}
-                  placeholder="Select Model Format"
-                  placeholderStyle={styles.placeholderStyle}
-                  showArrowIcon={true}
-                  ArrowUpIconComponent={() => (
-                    <Ionicons name="chevron-up" size={16} color="#666" />
-                  )}
-                  ArrowDownIconComponent={() => (
-                    <Ionicons name="chevron-down" size={16} color="#666" />
-                  )}
-                  disabled={downloadable}
-                  zIndex={1}
-                />
-              )}
-            </View>
+          </View>
 
-            <View style={styles.formatStatusContainer}>
-              {value && downloadedFormats.length > 0 && !isCheckingFormats && (
-                <View style={styles.formatStatusBadge}>
-                  <Text style={styles.formatStatusText}>
-                    {downloadedFormats.length} format
-                    {downloadedFormats.length !== 1 ? "s" : ""} available
-                    offline
-                  </Text>
-                </View>
-              )}
-            </View>
+          <Text style={styles.inputTitle}>Fraud Detection LLM</Text>
+          <View
+            style={[styles.dropDownWrapper, { zIndex: firstDropdownZIndex }]}
+          >
+            <DropDownPicker
+              open={open}
+              value={value}
+              items={items}
+              setOpen={handleFirstDropdownOpen}
+              setValue={setValue}
+              setItems={setItems}
+              style={styles.dropDown}
+              placeholder="Select a Model"
+              disabled={downloadable}
+              listMode={"SCROLLVIEW"}
+              zIndex={firstDropdownZIndex}
+              containerStyle={{ zIndex: firstDropdownZIndex }}
+            />
+          </View>
 
-            {downloadable && (
-              <View style={styles.progressBarContainer}>
-                <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  <Progress.Bar
-                    progress={progress}
-                    width={SCREEN_WIDTH - 80}
-                    height={8}
-                  />
-                  <TouchableOpacity
-                    onPress={async () => {
-                      try {
-                        console.log("User pressed cancel button");
-                        await cancelDownload();
-                      } catch (error) {
-                        console.error("Error cancelling download:", error);
-                        resetDownloadState();
-                      } finally {
-                        setDownloadable(false);
-                        setProgress(0);
-                        setStatus("Download cancelled");
-                        setFormatValue(null);
-
-                        // Refresh the format items list after cancelling
-                        if (value) {
-                          const preset = presets.find(
-                            (preset) => preset.name === value
-                          );
-                          if (preset) {
-                            checkDownloadedFormats(preset.name);
-                          }
-                        }
-                      }
-                    }}
-                    style={{ marginLeft: 8 }}
-                  >
-                    <Ionicons name="stop-circle" size={28} color="#FF3B30" />
-                  </TouchableOpacity>
-                </View>
-                <Text style={styles.progressBarText}>
-                  {(progress * 100).toFixed(2)}%
+          <Text style={[styles.inputTitle, { marginTop: 16 }]}>
+            Model Variants
+          </Text>
+          <View
+            style={[styles.dropDownWrapper, { zIndex: secondDropdownZIndex }]}
+          >
+            {!value ? (
+              <View style={styles.selectModelFirstContainer}>
+                <Text style={styles.selectModelFirstText}>
+                  Select a model first
                 </Text>
-                <Text style={styles.progressBarText}>{status}</Text>
+              </View>
+            ) : isCheckingFormats ? (
+              <View style={styles.loaderContainer}>
+                <ActivityIndicator size="small" color="#0078d4" />
+                <Text style={styles.loaderText}>
+                  Checking available variants...
+                </Text>
+              </View>
+            ) : (
+              <DropDownPicker
+                open={formatOpen}
+                value={formatValue}
+                items={formatItems}
+                setOpen={handleSecondDropdownOpen}
+                setValue={setFormatValue}
+                setItems={setFormatItems}
+                style={styles.dropDown}
+                placeholder="Select Model Variant"
+                placeholderStyle={styles.placeholderStyle}
+                showArrowIcon={true}
+                ArrowUpIconComponent={() => (
+                  <Ionicons name="chevron-up" size={16} color="#666" />
+                )}
+                ArrowDownIconComponent={() => (
+                  <Ionicons name="chevron-down" size={16} color="#666" />
+                )}
+                disabled={downloadable}
+                listMode={!isAndroid ? "SCROLLVIEW" : "MODAL"}
+                modalTitle="Select Model Varient"
+                modalTitleStyle={{
+                  marginTop: 16,
+                }}
+                zIndex={secondDropdownZIndex}
+                containerStyle={{ zIndex: secondDropdownZIndex }}
+                renderListItem={(props) => {
+                  const isDownloaded = downloadedVarients.includes(
+                    props?.item?.value || ""
+                  );
+                  return (
+                    <TouchableOpacity
+                      onPress={() => {
+                        if (props.item.value) {
+                          setFormatValue(props.item.value);
+                          setFormatOpen(false);
+                        }
+                      }}
+                      style={isDownloaded ? styles.downloadedItem : {}}
+                    >
+                      <View style={styles.varientItem}>
+                        <Text
+                          style={isDownloaded ? styles.downloadedItemText : {}}
+                        >
+                          {props.item.label}
+                        </Text>
+                        {props.item.value && isDownloaded && (
+                          <TouchableOpacity
+                            onPress={() => {
+                              deleteModel(props.item?.value || "");
+                            }}
+                          >
+                            <Ionicons
+                              name="trash-outline"
+                              size={16}
+                              color="#FF3B30"
+                            />
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  );
+                }}
+              />
+            )}
+          </View>
+          <View style={styles.formatStatusContainer}>
+            {value && downloadedFormats.length > 0 && !isCheckingFormats && (
+              <View style={styles.formatStatusBadge}>
+                <Text style={styles.formatStatusText}>
+                  {downloadedFormats.length} format
+                  {downloadedFormats.length !== 1 ? "s" : ""} available offline
+                </Text>
               </View>
             )}
           </View>
+          {downloadable && (
+            <View style={styles.progressBarContainer}>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <Progress.Bar
+                  progress={progress}
+                  width={SCREEN_WIDTH - 80}
+                  height={8}
+                />
+                <TouchableOpacity
+                  onPress={async () => {
+                    try {
+                      console.log("User pressed cancel button");
+                      await cancelDownload();
+                    } catch (error) {
+                      console.error("Error cancelling download:", error);
+                      resetDownloadState();
+                    } finally {
+                      setDownloadable(false);
+                      setProgress(0);
+                      setStatus("Download cancelled");
+                      setFormatValue(null);
+
+                      // Refresh the format items list after cancelling
+                      if (value) {
+                        const preset = presets.find(
+                          (preset) => preset.name === value
+                        );
+                        if (preset) {
+                          checkDownloadedFormats(preset.name);
+                        }
+                      }
+                    }
+                  }}
+                  style={{ marginLeft: 8 }}
+                >
+                  <Ionicons name="stop-circle" size={28} color="#FF3B30" />
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.progressBarText}>
+                {(progress * 100).toFixed(2)}%
+              </Text>
+              <Text style={styles.progressBarText}>{status}</Text>
+            </View>
+          )}
+
           <View style={styles.inputContainer}>
             <View style={styles.inputTitleContainer}>
               <Text style={styles.inputTitle}>Suspicious Message</Text>
@@ -368,28 +498,38 @@ const HomeScreen = () => {
                 multiline={true}
                 onChangeText={handleInputChange}
                 value={input}
+                textAlignVertical="top"
+                onFocus={() => {
+                  setTimeout(() => {
+                    scrollViewRef.current?.scrollToEnd({ animated: true });
+                  }, 100);
+                }}
               />
             </View>
           </View>
-        </View>
-        <View style={styles.buttonContainer}>
-          <Button
-            title="Verify Message"
-            onPress={handleButtonPress}
-            disabled={downloadable || !input}
-          />
-        </View>
-      </ScrollView>
-      {showModal && (
-        <View style={styles.modalBackground}>
-          <View style={styles.modalCard}>
-            <AutoComplete
-              closeModal={() => setShowModal(false)}
-              input={input}
+          <Text style={styles.aiDisclaimer}>
+            AI can make mistakes. Check important info
+          </Text>
+
+          <View style={styles.buttonContainer}>
+            <Button
+              title="Scan Message"
+              onPress={handleButtonPress}
+              disabled={downloadable || !input || !formatValue}
             />
           </View>
-        </View>
-      )}
+        </ScrollView>
+        {showModal && (
+          <View style={styles.modalBackground}>
+            <View style={styles.modalCard}>
+              <AutoComplete
+                closeModal={() => setShowModal(false)}
+                input={input}
+              />
+            </View>
+          </View>
+        )}
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -453,31 +593,39 @@ const styles = StyleSheet.create({
     padding: 16,
     zIndex: 2,
   },
-  dropDownContainer: {
-    width: "100%",
-    justifyContent: "center",
-    zIndex: 2,
-    borderRadius: 0,
-  },
   dropDownWrapper: {
     width: "100%",
-    alignItems: "center",
-    justifyContent: "center",
     marginBottom: 16,
+    position: "relative",
+  },
+  dropDown: {
+    width: "100%",
+    backgroundColor: "#D1f1ff",
+    borderWidth: 1,
+    borderColor: "#8FAFDB",
+    borderRadius: 0,
+  },
+  dropDownContainer: {
+    width: "100%",
+    backgroundColor: "#D1f1ff",
+    borderWidth: 1,
+    borderColor: "#8FAFDB",
+    borderRadius: 0,
+    maxHeight: 300,
+    zIndex: 1000,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   inputTitle: {
     fontSize: 16,
     fontWeight: "bold",
     marginBottom: 8,
-  },
-  dropDown: {
-    width: "100%",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#D1f1ff",
-    borderWidth: 1,
-    borderColor: "#8FAFDB",
-    borderRadius: 0,
   },
   inputContainer: {
     marginTop: 32,
@@ -503,7 +651,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#ccc",
     padding: 10,
+    paddingTop: 10,
     backgroundColor: "#D1f1ff",
+    textAlignVertical: "top",
   },
   pasteButton: {
     backgroundColor: "#004AAD",
@@ -532,6 +682,7 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
     justifyContent: "center",
     paddingHorizontal: 20,
+    marginTop: 16,
   },
   progressBarContainer: {
     width: "100%",
@@ -561,16 +712,24 @@ const styles = StyleSheet.create({
   },
   modalCard: {
     width: "100%",
-    minHeight: "50%",
     backgroundColor: "white",
     borderRadius: 10,
     padding: 20,
+    maxHeight: "90%",
+  },
+  modalContentContainer: {
+    backgroundColor: "#D1f1ff",
+    padding: 20,
+    borderRadius: 8,
+    maxHeight: "80%",
+    margin: 20,
   },
   dropdownItemLabel: {
     fontSize: 14,
+    paddingVertical: 8,
   },
   dropdownItemContainer: {
-    // Each item will define its own background color based on downloaded status
+    maxHeight: 300,
   },
   placeholderStyle: {
     color: "#666",
@@ -623,5 +782,31 @@ const styles = StyleSheet.create({
   selectModelFirstText: {
     fontSize: 14,
     color: "#666",
+  },
+  contentContainer: {
+    paddingHorizontal: 10,
+  },
+  scrollView: {
+    marginBottom: 10,
+  },
+  aiDisclaimer: {
+    fontSize: 12,
+    color: "#666",
+    textAlign: "center",
+    marginTop: 16,
+  },
+  varientItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+  },
+  downloadedItem: {
+    backgroundColor: "#e6f7ff",
+  },
+  downloadedItemText: {
+    fontWeight: "bold",
+    color: "#0078d4",
   },
 });

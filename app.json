@@ -2,7 +2,7 @@
   "expo": {
     "name": "fraudShield",
     "slug": "fraudShield",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -13,7 +13,11 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "lakpriya.fraudShield"
+      "bundleIdentifier": "lakpriya.fraudShield",
+      "icon:": "./assets/icon.png",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
